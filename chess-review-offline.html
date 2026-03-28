@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Review — Offline</title>
+<style>
+/* =====================================================
+   VARIABLES — edit these to retheme the whole app
+   ===================================================== */
+:root {
+  --bg:         #111113;
+  --panel:      #18181b;
+  --border:     #2c2c32;
+  --text:       #e4e2dc;
+  --muted:      #666360;
+  --accent:     #e8c96d;
+
+  --sq-light:   #285A48;
+  --sq-dark:    #091413;
+
+  --book:       #7c3aed;
+  --excellent:  #1d6fa4;
+  --good:       #1a7a4a;
+  --inaccuracy: #b8860b;
+  --mistake:    #c05c00;
+  --blunder:    #b91c1c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.logo { font-size: 17px; font-weight: bold; color: var(--accent); }
+
+.ollama-status {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--muted);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.online  { background: #22c55e; box-shadow: 0 0 5px #22c55e88; }
+.dot.offline { background: #ef4444; }
+
+select, button { font-family: inherit; font-size: 11px; }
+.model-select {
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); padding: 3px 7px; border-radius: 3px; cursor: pointer;
+}
+
+/* =====================================================
+   3-COLUMN LAYOUT
+   Flexbox so JS can resize panels by setting .style.width
+   The center panel has flex:1 so it takes all remaining space.
+   ===================================================== */
+.layout {
+  display: flex;          /* row direction by default */
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;          /* needed for flex children to scroll */
+}
+
+/* Left and right panels have fixed pixel widths set by JS.
+   min-width prevents them being dragged too small to be usable. */
+.left  { width: 220px; min-width: 140px; max-width: 500px; }
+.right { width: 360px; min-width: 200px; max-width: 700px; }
+
+/* Center stretches to fill whatever space is left */
+.center { flex: 1; min-width: 400px; overflow: hidden; }
+
+/* ── DRAG HANDLE ──
+   A thin vertical strip between panels.
+   cursor: col-resize tells the browser to show the resize arrow.
+   We insert these via JS so they sit between the panels. */
+.drag-handle {
+  width: 5px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 10;
+}
+.drag-handle:hover,
+.drag-handle.dragging { background: var(--accent); }
+
+/* =====================================================
+   LEFT PANEL — PGN + move list
+   ===================================================== */
+.left {
+  background: var(--panel);
+  /* border-right removed — drag handle provides the visual separator */
+  display: flex; flex-direction: column; overflow: hidden;
+  flex-shrink: 0;   /* don't let flexbox shrink it unexpectedly */
+}
+.panel-title {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pgn-area { padding: 10px; border-bottom: 1px solid var(--border); }
+textarea {
+  width: 100%; height: 80px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: inherit; font-size: 10px;
+  padding: 7px; resize: none; border-radius: 3px; outline: none; line-height: 1.5;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+.btn-row { display: flex; gap: 6px; margin-top: 6px; }
+.btn {
+  padding: 5px 12px; border: none; border-radius: 3px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.btn:hover    { opacity: 0.85; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-load  { background: var(--accent); color: #000; font-weight: bold; flex: 1; }
+.btn-clear { background: var(--border); color: var(--muted); }
+
+/* Samples dropdown */
+.samples-wrap { position: relative; }
+.btn-samples  { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 10px; text-decoration: underline; padding: 0; }
+.samples-menu {
+  display: none; position: absolute; top: 20px; right: 0;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 4px; z-index: 100; min-width: 190px; box-shadow: 0 6px 20px #0006;
+}
+.sample-item {
+  display: block; width: 100%; padding: 8px 12px;
+  background: none; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); font-family: inherit; font-size: 11px; text-align: left; cursor: pointer;
+}
+.sample-item:last-child { border-bottom: none; }
+.sample-item:hover { background: var(--border); }
+
+/* Move list */
+.move-list { flex: 1; overflow-y: auto; padding: 6px; }
+.move-list::-webkit-scrollbar { width: 3px; }
+.move-list::-webkit-scrollbar-thumb { background: var(--border); }
+.move-row {
+  display: grid; grid-template-columns: 22px 1fr 1fr;
+  gap: 2px; margin-bottom: 1px;
+}
+.move-num { font-size: 10px; color: var(--muted); padding: 4px 2px; }
+.move-btn {
+  background: none; border: none; color: var(--text);
+  font-family: inherit; font-size: 12px; padding: 4px 6px;
+  cursor: pointer; border-radius: 2px; text-align: left;
+  display: flex; align-items: center; gap: 4px;
+}
+.move-btn:hover  { background: var(--border); }
+.move-btn.active { background: var(--accent); color: #000; }
+.q-dot   { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.cp-label { margin-left: auto; font-size: 9px; color: var(--muted); }
+
+/* =====================================================
+   CENTER — Board
+   ===================================================== */
+.center {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; padding: 16px; background: var(--bg);
+}
+.player-bar {
+  width: 480px; display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 3px;
+}
+.player-chip { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--border); }
+.player-chip.white { background: #f0e8d8; }
+.player-chip.black { background: #1a1a1a; }
+.player-name   { font-size: 12px; }
+.player-result { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+.eval-wrap { width: 480px; display: flex; align-items: center; gap: 8px; }
+.eval-track { flex: 1; height: 5px; background: #222; border-radius: 3px; overflow: hidden; }
+.eval-fill  { height: 100%; background: #f0d9b5; border-radius: 3px; transition: width 0.4s ease; width: 50%; }
+.eval-label { font-size: 10px; color: var(--muted); min-width: 40px; text-align: right; }
+
+#board {
+  display: grid; grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  border: 2px solid var(--border); box-shadow: 0 12px 40px #0008;
+}
+.sq { width:60px; height:60px; display:flex; align-items:center; justify-content:center; font-size:38px; position:relative; user-select:none; }
+.sq.light { background: var(--sq-light); }
+.sq.dark  { background: var(--sq-dark); }
+.sq.hl-from { outline: 3px solid rgba(232,201,109,0.5); outline-offset:-3px; }
+.sq.hl-to   { outline: 3px solid rgba(232,201,109,0.9); outline-offset:-3px; }
+.sq.hl-best { outline: 3px solid rgba(34,197,94,0.85);  outline-offset:-3px; }
+.coord { position:absolute; font-size:9px; font-weight:bold; opacity:0.45; line-height:1; pointer-events:none; }
+.coord.rank { top:2px; left:3px; }
+.coord.file { bottom:2px; right:3px; }
+
+.nav { display:flex; align-items:center; gap:5px; }
+.nav-btn {
+  width:30px; height:30px; background:var(--panel);
+  border:1px solid var(--border); color:var(--text);
+  border-radius:3px; cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:border-color 0.1s;
+}
+.nav-btn:hover    { border-color:var(--accent); color:var(--accent); }
+.nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.move-counter { font-size:10px; color:var(--muted); padding:0 8px; min-width:60px; text-align:center; }
+.run-btn {
+  padding:7px 14px; background:var(--accent); color:#000;
+  font-family:inherit; font-size:11px; font-weight:bold;
+  letter-spacing:1px; border:none; border-radius:3px; cursor:pointer; transition:opacity 0.15s;
+}
+.run-btn:hover    { opacity:0.85; }
+.run-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.run-btn.running  { background:#ef4444; color:#fff; }
+
+/* =====================================================
+   RIGHT PANEL — Analysis
+   ===================================================== */
+.right {
+  background: var(--panel);
+  /* border-left removed — drag handle provides the visual separator */
+  display: flex; flex-direction: column; overflow: hidden;
+  flex-shrink: 0;
+}
+.progress-wrap { display:none; padding:8px 14px 4px; flex-shrink:0; }
+.progress-wrap.show { display:block; }
+.progress-track { height:3px; background:var(--border); border-radius:2px; }
+.progress-fill  { height:3px; background:var(--accent); border-radius:2px; width:0%; transition:width 0.3s; }
+.progress-text  { font-size:9px; color:var(--muted); margin-top:4px; text-align:center; }
+
+.analysis { flex:1; overflow-y:auto; padding:14px; }
+.analysis::-webkit-scrollbar { width:3px; }
+.analysis::-webkit-scrollbar-thumb { background:var(--border); }
+
+/* Placeholder */
+.placeholder {
+  height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:8px; text-align:center; color:var(--muted); font-size:12px; line-height:1.8;
+}
+.placeholder-icon { font-size:36px; opacity:0.15; }
+
+/* Move card */
+.move-card { display:none; }
+.move-card.show { display:block; }
+.move-heading    { font-size:22px; font-weight:bold; margin-bottom:2px; }
+.move-subheading { font-size:10px; color:var(--muted); margin-bottom:10px; }
+
+.quality-pill {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:20px; font-size:10px; font-weight:bold;
+  letter-spacing:0.5px; margin-bottom:14px; border:1px solid currentColor;
+}
+.q-book       { color:var(--book);       background:color-mix(in srgb,var(--book) 15%,transparent); }
+.q-excellent  { color:var(--excellent);  background:color-mix(in srgb,var(--excellent) 15%,transparent); }
+.q-good       { color:var(--good);       background:color-mix(in srgb,var(--good) 15%,transparent); }
+.q-inaccuracy { color:var(--inaccuracy); background:color-mix(in srgb,var(--inaccuracy) 15%,transparent); }
+.q-mistake    { color:var(--mistake);    background:color-mix(in srgb,var(--mistake) 15%,transparent); }
+.q-blunder    { color:var(--blunder);    background:color-mix(in srgb,var(--blunder) 15%,transparent); }
+
+.section { margin-bottom:14px; }
+.section-title {
+  font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:7px;
+}
+.section-body { font-size:11px; line-height:1.8; color:#c8c5bc; }
+
+.sf-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.sf-row:last-child { border-bottom:none; }
+.sf-key   { color:var(--muted); }
+.sf-value { font-weight:bold; }
+
+.thinking { font-size:11px; color:var(--muted); font-style:italic; }
+.thinking::after { content:''; animation:dots 1.5s steps(4,end) infinite; }
+@keyframes dots { 0%,100%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+
+.offline-note {
+  font-size:10px; color:var(--muted); background:var(--bg);
+  border:1px solid var(--border); border-radius:3px; padding:7px 10px; line-height:1.7; font-style:italic;
+}
+
+/* Summary card */
+.summary-card { display:none; }
+.summary-card.show { display:block; }
+.summary-title { font-size:18px; font-weight:bold; color:var(--accent); margin-bottom:2px; }
+.summary-sub   { font-size:10px; color:var(--muted); letter-spacing:1px; margin-bottom:14px; }
+
+.ratings { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.rating-box { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px; text-align:center; }
+.rating-player { font-size:9px; color:var(--muted); margin-bottom:3px; }
+.rating-number { font-size:28px; font-weight:bold; }
+.rating-label  { font-size:9px; color:var(--muted); margin-top:2px; }
+.rating-white .rating-number { color:var(--sq-light); }
+.rating-black .rating-number { color:var(--muted); }
+
+.chip-row { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+.chip { padding:2px 7px; border-radius:10px; font-size:9px; border:1px solid currentColor; }
+
+.moment { background:var(--bg); border-left:2px solid var(--accent); padding:6px 9px; margin-bottom:5px; border-radius:0 3px 3px 0; font-size:10px; line-height:1.6; cursor:pointer; }
+.moment:hover { background:var(--border); }
+.moment-move { color:var(--accent); font-weight:bold; }
+
+.tip { display:flex; gap:6px; margin-bottom:6px; font-size:10px; line-height:1.7; }
+.tip-arrow { color:var(--accent); flex-shrink:0; }
+
+.status-bar { padding:6px 14px; border-top:1px solid var(--border); font-size:9px; color:var(--muted); letter-spacing:0.5px; flex-shrink:0; }
+
+/* Modal */
+.modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:500; align-items:center; justify-content:center; }
+.modal-backdrop.show { display:flex; }
+.modal { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:24px; max-width:460px; width:90%; }
+.modal h2 { color:var(--accent); margin-bottom:10px; }
+.modal p  { font-size:11px; line-height:1.8; color:#c8c5bc; margin-bottom:10px; }
+.modal code { display:block; background:var(--bg); border:1px solid var(--border); padding:7px 10px; border-radius:3px; color:var(--accent); font-size:11px; margin:6px 0; white-space:pre; }
+
+/* =====================================================
+   SAVED GAMES DRAWER
+   A slide-in panel from the left showing recent games.
+   Uses CSS transform + transition for smooth animation —
+   no JavaScript animation libraries needed.
+   ===================================================== */
+.saved-drawer {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 300px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  z-index: 200;
+  display: flex; flex-direction: column;
+  transform: translateX(-100%);   /* hidden off left edge */
+  transition: transform 0.25s ease;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+}
+.saved-drawer.open { transform: translateX(0); }  /* slide in */
+
+.drawer-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.drawer-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 16px; cursor: pointer; padding: 0 4px;
+}
+.drawer-close:hover { color: var(--text); }
+
+.saved-list {
+  flex: 1; overflow-y: auto; padding: 8px;
+}
+.saved-list::-webkit-scrollbar { width: 3px; }
+.saved-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.saved-item {
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.saved-item:hover { border-color: var(--accent); }
+.saved-item-title { font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+.saved-item-meta  { font-size: 9px; color: var(--muted); line-height: 1.6; }
+.saved-item-chips { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; }
+
+.saved-item-delete {
+  float: right;
+  background: none; border: none;
+  color: var(--muted); font-size: 12px; cursor: pointer;
+  padding: 0 2px; margin-left: 6px;
+}
+.saved-item-delete:hover { color: var(--blunder); }
+
+.drawer-empty {
+  padding: 30px 16px; text-align: center;
+  color: var(--muted); font-size: 11px; line-height: 1.8;
+}
+
+/* Semi-transparent backdrop behind drawer */
+.drawer-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 199;
+}
+.drawer-backdrop.open { display: block; }
+
+/* Button to open the drawer, sits in the header */
+.btn-saved {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: inherit; font-size: 10px;
+  padding: 3px 9px; border-radius: 3px; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-saved:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Setup modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h2>⚙ Ollama Setup</h2>
+    <p>Ollama isn't responding. To enable plain-English explanations:</p>
+    <p><strong>1.</strong> Download from <strong>ollama.com</strong> and install.</p>
+    <p><strong>2.</strong> Pull a model (one-time ~4 GB download):</p>
+    <code>ollama pull mistral</code>
+    <p><strong>3.</strong> In Command Prompt (not PowerShell):</p>
+    <code>set OLLAMA_ORIGINS=*
+ollama serve</code>
+    <p style="font-size:10px;color:var(--muted)">Keep that window open. Stockfish works without Ollama.</p>
+    <button class="btn btn-load" style="margin-top:8px" onclick="closeModal()">OK, got it</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">♟ ChessReview</div>
+  <span style="font-size:10px;color:var(--muted)">Stockfish + Ollama · Offline</span>
+  <button class="btn-saved" onclick="openDrawer()">📁 Saved Games</button>
+  <div class="ollama-status">
+    <div class="dot" id="ollama-dot"></div>
+    <span id="ollama-text">Checking...</span>
+    <select class="model-select" id="model-select">
+      <option value="mistral">mistral</option>
+      <option value="gemma3">gemma3</option>
+      <option value="llava">llava</option>
+      <option value="llava-llama3">llava-llama3</option>
+    </select>
+    <button class="btn-samples" onclick="openModal()" style="text-decoration:none;opacity:0.5">⚙</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="panel-title">
+      <span>Moves</span>
+      <div class="samples-wrap">
+        <button class="btn-samples" onclick="toggleSamples()">Samples ▾</button>
+        <div class="samples-menu" id="samples-menu">
+          <button class="sample-item" onclick="loadSample('immortal')">♟ Immortal Game 1851</button>
+          <button class="sample-item" onclick="loadSample('chesscom')">♟ Chess.com · Four Knights</button>
+          <button class="sample-item" onclick="loadSample('lichess')">♟ Lichess · Philidor</button>
+        </div>
+      </div>
+    </div>
+    <div class="pgn-area">
+      <textarea id="pgn-input" placeholder="Paste PGN here..."></textarea>
+      <div class="btn-row">
+        <button class="btn btn-load" onclick="loadPGN()">Load</button>
+        <button class="btn btn-clear" onclick="clearGame()">Clear</button>
+      </div>
+    </div>
+    <div class="move-list" id="move-list">
+      <div style="padding:20px 10px;color:var(--muted);text-align:center;line-height:1.9">
+        Paste a PGN above<br>to load your game
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag handle between left and center -->
+  <div class="drag-handle" id="drag-left" title="Drag to resize"></div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="player-bar">
+      <div class="player-chip black"></div>
+      <div class="player-name" id="black-name">Black</div>
+      <div class="player-result" id="black-result">—</div>
+    </div>
+    <div class="eval-wrap">
+      <span style="font-size:10px;color:var(--muted)">♚</span>
+      <div class="eval-track"><div class="eval-fill" id="eval-fill"></div></div>
+      <div class="eval-label" id="eval-label">0.0</div>
+    </div>
+    <div id="board"></div>
+    <div class="eval-wrap" style="visibility:hidden"><!-- spacer --></div>
+    <div class="player-bar">
+      <div class="player-chip white"></div>
+      <div class="player-name" id="white-name">White</div>
+      <div class="player-result" id="white-result">—</div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn" id="btn-start" onclick="goTo(0)"  disabled>⏮</button>
+      <button class="nav-btn" id="btn-prev"  onclick="prev()"   disabled>◀</button>
+      <div class="move-counter" id="move-counter">— / —</div>
+      <button class="nav-btn" id="btn-next"  onclick="next()"   disabled>▶</button>
+      <button class="nav-btn" id="btn-end"   onclick="goTo(-1)" disabled>⏭</button>
+      <button class="run-btn" id="btn-run"   onclick="runAll()" disabled>▶▶ Run</button>
+    </div>
+  </div>
+
+  <!-- Drag handle between center and right -->
+  <div class="drag-handle" id="drag-right" title="Drag to resize"></div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="panel-title">
+      <span>Analysis</span>
+      <span style="color:var(--muted);font-size:9px">Stockfish + Ollama</span>
+    </div>
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text">Running...</div>
+    </div>
+    <div class="analysis" id="analysis">
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">♟</div>
+        Load a game, then click any move.<br><br>
+        <span style="color:var(--good)">Stockfish</span> evaluates positions.<br>
+        <span style="color:var(--accent)">Ollama</span> explains in plain English.
+      </div>
+      <div class="summary-card" id="summary-card"></div>
+      <div class="move-card" id="move-card">
+        <div class="move-heading"    id="card-move"></div>
+        <div class="move-subheading" id="card-meta"></div>
+        <div id="card-badge"></div>
+        <div class="section">
+          <div class="section-title">Stockfish</div>
+          <div id="card-sf"></div>
+        </div>
+        <div class="section" id="best-section">
+          <div class="section-title">Best Move Was</div>
+          <div class="section-body" id="card-best"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">
+            Explanation
+            <span id="card-ai-src" style="font-size:9px;color:var(--muted)"></span>
+          </div>
+          <div id="card-explanation"></div>
+        </div>
+      </div>
+    </div>
+    <div id="debug-panel" style="padding:6px 10px;font-size:9px;color:#888;border-top:1px solid var(--border);max-height:120px;overflow-y:auto;font-family:monospace;line-height:1.6;background:#0a0a0c"></div>
+    <div class="status-bar" id="status">Ready — load a PGN to begin</div>
+  </div>
+
+</div>
+
+<!-- ── SAVED GAMES DRAWER ──
+     Sits outside the main layout so it overlays the whole app.
+     The backdrop div catches clicks outside the drawer to close it. -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div class="saved-drawer" id="saved-drawer">
+  <div class="drawer-header">
+    <span>Saved Games</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="saved-list" id="saved-list">
+    <div class="drawer-empty">No saved games yet.<br>Run analysis on a game<br>to save it automatically.</div>
+  </div>
+</div>
+
+<!-- Stockfish loaded dynamically as blob to work from file:// -->
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+//  PIECE GLYPHS
+// ════════════════════════════════════════════════
+const GLYPHS = {
+  K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',
+  k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'
+};
+
+// ════════════════════════════════════════════════
+//  CHESS ENGINE
+//  board[7-rank][file]  → rank 0 = a1 (bottom), rank 7 = a8 (top)
+// ════════════════════════════════════════════════
+class Chess {
+  constructor() { this.reset(); }
+
+  reset() {
+    this.board = this._start();
+    this.turn  = 'w';
+    this.castle = { K:true, Q:true, k:true, q:true };
+    this.ep     = null;         // en passant target square [file,rank] or null
+    this.history   = [];        // { san, from, to, turn }
+    this.positions = [this._snap()];
+  }
+
+  _start() {
+    const b = Array(8).fill(null).map(()=>Array(8).fill(null));
+    'RNBQKBNR'.split('').forEach((p,f) => {
+      b[0][f] = p.toLowerCase(); // rank 7 (black back rank) stored at row 0
+      b[1][f] = 'p';
+      b[6][f] = 'P';
+      b[7][f] = p;               // rank 0 (white back rank) stored at row 7
+    });
+    return b;
+  }
+
+  get(f,r)   { return this.board[7-r][f]; }
+  set(f,r,p) { this.board[7-r][f] = p; }
+  _alg(s)    { return [s.charCodeAt(0)-97, parseInt(s[1])-1]; }
+  _snap()    { return { board:this.board.map(r=>[...r]), turn:this.turn, castle:{...this.castle}, ep:this.ep }; }
+
+  // Return FEN string so Stockfish can evaluate this position
+  toFEN() {
+    let fen = '';
+    for(let r=7; r>=0; r--) {
+      let e=0;
+      for(let f=0; f<8; f++) {
+        const p=this.board[7-r][f];
+        if(p) { if(e){fen+=e; e=0;} fen+=p; } else e++;
+      }
+      if(e) fen+=e;
+      if(r>0) fen+='/';
+    }
+    let c='';
+    if(this.castle.K)c+='K'; if(this.castle.Q)c+='Q';
+    if(this.castle.k)c+='k'; if(this.castle.q)c+='q';
+    const ep = this.ep ? String.fromCharCode(97+this.ep[0])+(this.ep[1]+1) : '-';
+    return `${fen} ${this.turn} ${c||'-'} ${ep} 0 1`;
+  }
+
+  apply(san) {
+    const mv = this._parse(san);
+    if(!mv) return false;
+
+    if(mv.castle) {
+      const rank = this.turn==='w' ? 0 : 7;
+      if(mv.castle==='Q') {
+        this.set(4,rank,null); this.set(0,rank,null);
+        this.set(2,rank,this.turn==='w'?'K':'k');
+        this.set(3,rank,this.turn==='w'?'R':'r');
+        mv.from=[4,rank]; mv.to=[2,rank];
+      } else {
+        this.set(4,rank,null); this.set(7,rank,null);
+        this.set(6,rank,this.turn==='w'?'K':'k');
+        this.set(5,rank,this.turn==='w'?'R':'r');
+        mv.from=[4,rank]; mv.to=[6,rank];
+      }
+    } else {
+      const [ff,fr]=mv.from, [tf,tr]=mv.to;
+      const p=this.get(ff,fr);
+      this.set(ff,fr,null);
+      // En passant: remove captured pawn
+      if(p&&p.toLowerCase()==='p'&&this.ep&&tf===this.ep[0]&&tr===this.ep[1])
+        this.set(tf, this.turn==='w'?tr-1:tr+1, null);
+      this.set(tf, tr, mv.promo||p);
+      // Record new en passant square for double pawn push
+      this.ep = (p&&p.toLowerCase()==='p'&&Math.abs(tr-fr)===2) ? [tf,(fr+tr)/2] : null;
+    }
+
+    // Update castling rights
+    const [ff,fr] = mv.from||[0,0];
+    if(mv.piece==='K'){this.castle.K=false;this.castle.Q=false;}
+    if(mv.piece==='k'){this.castle.k=false;this.castle.q=false;}
+    if(ff===0&&fr===0)this.castle.Q=false;
+    if(ff===7&&fr===0)this.castle.K=false;
+    if(ff===0&&fr===7)this.castle.q=false;
+    if(ff===7&&fr===7)this.castle.k=false;
+
+    const prev=this.turn;
+    this.turn=this.turn==='w'?'b':'w';
+    this.history.push({san, from:mv.from, to:mv.to, turn:prev});
+    this.positions.push(this._snap());
+    return true;
+  }
+
+  _parse(san) {
+    const s=san.replace(/[+#!?]/g,'');
+    if(s==='O-O-O') return {castle:'Q', piece:this.turn==='w'?'K':'k'};
+    if(s==='O-O')   return {castle:'K', piece:this.turn==='w'?'K':'k'};
+
+    let promo=null, t=s;
+    if(t.includes('=')) {
+      const [base,p]=t.split('='); t=base;
+      promo = this.turn==='w' ? p : p.toLowerCase();
+    }
+
+    let piece='P';
+    if('KQRBN'.includes(t[0])){piece=t[0]; t=t.slice(1);}
+    t=t.replace('x','');
+
+    const dest=t.slice(-2);
+    const [tf,tr]=this._alg(dest);
+    const dis=t.slice(0,-2);
+    const ap=this.turn==='w'?piece:piece.toLowerCase();
+
+    const cands=[];
+    for(let r=0;r<8;r++) for(let f=0;f<8;f++)
+      if(this.get(f,r)===ap && this._ok(f,r,tf,tr,piece)) cands.push([f,r]);
+
+    let from=null;
+    if(cands.length===1){ from=cands[0]; }
+    else if(cands.length>1){
+      for(const c of cands){
+        if(!dis){from=cands[0];break;}
+        if(dis.length===2){const[a,b]=this._alg(dis);if(c[0]===a&&c[1]===b){from=c;break;}}
+        else if(dis>='a'&&dis<='h'){if(c[0]===dis.charCodeAt(0)-97){from=c;break;}}
+        else if(dis>='1'&&dis<='8'){if(c[1]===parseInt(dis)-1){from=c;break;}}
+      }
+      if(!from) from=cands[0];
+    }
+
+    if(!from) return null;
+    return {from, to:[tf,tr], piece, promo, castle:null};
+  }
+
+  _ok(ff,fr,tf,tr,pt) {
+    const df=tf-ff, dr=tr-fr, af=Math.abs(df), ar=Math.abs(dr);
+    const tgt=this.get(tf,tr);
+    const enemy=tgt&&((this.turn==='w')!==(tgt===tgt.toUpperCase()));
+    const empty=!tgt;
+    const epHit=this.ep&&tf===this.ep[0]&&tr===this.ep[1];
+    switch(pt){
+      case'P':{
+        const d=this.turn==='w'?1:-1, sr=this.turn==='w'?1:6;
+        if(df===0){ if(dr===d&&empty)return true; if(dr===2*d&&fr===sr&&empty&&!this.get(tf,fr+d))return true; }
+        else if(af===1&&dr===d&&(enemy||epHit))return true;
+        return false;
+      }
+      case'N':return af*ar===2&&(empty||enemy);
+      case'B':return af===ar&&(empty||enemy)&&this._clear(ff,fr,tf,tr);
+      case'R':return(df===0||dr===0)&&(empty||enemy)&&this._clear(ff,fr,tf,tr);
+      case'Q':return(af===ar||df===0||dr===0)&&(empty||enemy)&&this._clear(ff,fr,tf,tr);
+      case'K':return af<=1&&ar<=1&&(empty||enemy);
+    }
+    return false;
+  }
+
+  _clear(f1,r1,f2,r2){
+    const df=Math.sign(f2-f1), dr=Math.sign(r2-r1);
+    let f=f1+df, r=r1+dr;
+    while(f!==f2||r!==r2){ if(this.get(f,r))return false; f+=df; r+=dr; }
+    return true;
+  }
+}
+
+// ════════════════════════════════════════════════
+//  PGN PARSER
+// ════════════════════════════════════════════════
+function stripBrackets(txt, open, close) {
+  let out='', depth=0;
+  for(const c of txt){
+    if(c===open){depth++;continue;}
+    if(c===close){depth=Math.max(0,depth-1);continue;}
+    if(depth===0) out+=c;
+  }
+  return out;
+}
+
+function parsePGN(pgn) {
+  const hdr={};
+  const hre=/\[([A-Za-z]\w*)\s+"([^"]*)"\]/g; let m;
+  while((m=hre.exec(pgn))!==null) hdr[m[1]]=m[2];
+
+  let t=pgn;
+  t=t.replace(/^\[.*\]$/gm,' ');   // remove header lines
+  t=stripBrackets(t,'{','}');       // {comments} — covers Lichess [%clk] too
+  t=stripBrackets(t,'(',')')        // (variations)
+  t=t.replace(/\$\d+/g,' ');       // NAG codes ($1, $2 …) from Chess.com
+  t=t.replace(/\b(1-0|0-1|1\/2-1\/2)\b|\*/g,' ');
+  t=t.replace(/\d+\.+/g,' ');      // move numbers
+  t=t.replace(/[!?]+/g,' ');
+  t=t.replace(/\s+/g,' ').trim();
+
+  const re=/^(O-O-O|O-O|[KQRBN]([a-h]|[1-8]|[a-h][1-8])?x?[a-h][1-8]|[a-h](x[a-h])?[1-8])(=[QRBNqrbn])?[+#]?$/;
+  const moves=[];
+  for(const tok of t.split(' ')){
+    if(tok.length<2) continue;
+    if(re.test(tok.replace(/[+#]$/,'')))
+      moves.push(tok.replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O'));
+  }
+  return { hdr, moves, result: hdr.Result||'*' };
+}
+
+// ════════════════════════════════════════════════
+//  STOCKFISH
+// ════════════════════════════════════════════════
+let sf=null, sfCbs=[], sfReady=false;
+
+const SF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+
+async function initSF(){
+  setStatus('Loading Stockfish...');
+  try {
+    // Fetch the JS as text, create a Blob URL — works from file:// unlike direct Worker URL
+    const resp = await fetch(SF_CDN);
+    if(!resp.ok) throw new Error('fetch failed');
+    const code = await resp.text();
+    const blob = new Blob([code], {type:'application/javascript'});
+    const blobUrl = URL.createObjectURL(blob);
+    sf = new Worker(blobUrl);
+    sf.onmessage = e => {
+      const line = typeof e.data === 'string' ? e.data : '';
+      if(line === 'readyok') {
+        sfReady = true;
+        setStatus('Stockfish ready — load a PGN to begin');
+        updateDebug('Stockfish loaded OK via blob');
+      }
+      sfCbs.forEach(cb => cb(line));
+    };
+    sf.onerror = err => {
+      updateDebug('SF worker error: ' + err.message);
+      sf = null;
+    };
+    sf.postMessage('uci');
+    sf.postMessage('isready');
+  } catch(e) {
+    updateDebug('Stockfish load failed: ' + e.message + ' — analysis unavailable');
+    setStatus('Stockfish unavailable (need internet for first load)');
+    sf = null;
+  }
+}
+
+// Analyse a FEN position. Returns { cp, mate, bestMove, depth }
+// cp is ALWAYS from the SIDE-TO-MOVE's perspective (positive = good for them)
+function sfAnalyse(fen, depth=16){
+  return new Promise(async resolve=>{
+    // Wait up to 15s for Stockfish to become ready
+    if(!sf || !sfReady) {
+      let waited = 0;
+      while((!sf || !sfReady) && waited < 15000) {
+        await new Promise(r=>setTimeout(r,200));
+        waited += 200;
+      }
+    }
+    if(!sf){ resolve({cp:0,mate:null,bestMove:null,depth:0}); return; }
+
+    let res={cp:0,mate:null,bestMove:null,depth:0};
+    const timer=setTimeout(()=>{
+      updateDebug('SF timeout on: '+fen.slice(0,40));
+      remove(); resolve(res);
+    }, 12000);
+
+    const cb=line=>{
+      const sm=line.match(/score (cp|mate) (-?\d+)/);
+      if(sm){ if(sm[1]==='cp') res.cp=parseInt(sm[2])/100; else res.mate=parseInt(sm[2]); }
+      const dm=line.match(/\bdepth (\d+)/);
+      if(dm) res.depth=parseInt(dm[1]);
+      if(line.startsWith('bestmove')){
+        const bm=line.split(' ')[1];
+        res.bestMove=(bm&&bm!=='(none)')?bm:null;
+        clearTimeout(timer); remove();
+        updateDebug(`cp=${res.cp.toFixed(2)} mate=${res.mate} best=${res.bestMove} d=${res.depth} | ${fen.slice(0,30)}...`);
+        resolve(res);
+      }
+    };
+    const remove=()=>{ sfCbs=sfCbs.filter(c=>c!==cb); };
+    sfCbs.push(cb);
+    sf.postMessage('stop');
+    sf.postMessage('position fen '+fen);
+    sf.postMessage('go depth '+depth);
+  });
+}
+
+// Update debug panel in bottom-right
+let _dbgLines=[];
+function updateDebug(msg){
+  _dbgLines.push(msg);
+  if(_dbgLines.length>12) _dbgLines=_dbgLines.slice(-12);
+  const dp=document.getElementById('debug-panel');
+  if(dp) dp.innerHTML=_dbgLines.map(l=>`<div>${l}</div>`).join('');
+  console.log('[SF]',msg);
+}
+
+/*
+  ── CENTIPAWN LOSS CALCULATION (THE BUG FIX) ──
+
+  Stockfish always scores from the CURRENT side-to-move's perspective.
+
+  Before the move:  cpBefore = how good the position is for the player making the move
+  After the move:   cpAfter  = how good the position is for the OPPONENT (now their turn)
+
+  The player's actual result (from their own perspective) after the move = -cpAfter
+
+  cpLoss = what they COULD have had (cpBefore, if they played perfectly)
+         MINUS what they actually GOT (-cpAfter)
+         = cpBefore - (-cpAfter)
+         = cpBefore + cpAfter
+
+  Positive cpLoss = they played worse than best
+  Capped at 0 (can't have "negative" loss)
+*/
+function calcCpLoss(cpBefore, cpAfter){
+  return Math.max(0, cpBefore + cpAfter);
+}
+
+function cpLossToQuality(loss){
+  if(loss <  5)  return 'excellent';
+  if(loss < 20)  return 'good';
+  if(loss < 50)  return 'inaccuracy';
+  if(loss < 150) return 'mistake';
+  return 'blunder';
+}
+
+function evalPct(cpFromWhite, mate){
+  if(mate!==null) return mate>0?95:5;
+  return Math.max(5, Math.min(95, 50+50*Math.tanh(cpFromWhite/4)));
+}
+
+function fmtEval(cp, mate){
+  if(mate!==null) return mate>0?`M${mate}`:`-M${Math.abs(mate)}`;
+  return cp>=0?`+${cp.toFixed(1)}`:cp.toFixed(1);
+}
+
+// ════════════════════════════════════════════════
+//  OLLAMA
+// ════════════════════════════════════════════════
+const OLLAMA_HOSTS=['http://127.0.0.1:11434','http://localhost:11434'];
+let ollamaUrl=OLLAMA_HOSTS[0], ollamaUp=false;
+
+async function pingOllama(){
+  for(const url of OLLAMA_HOSTS){
+    try{
+      const r=await fetch(url+'/api/tags',{signal:AbortSignal.timeout(3000)});
+      if(r.ok){ ollamaUp=true; ollamaUrl=url; setOllamaUI(true); return; }
+    }catch(e){}
+  }
+  ollamaUp=false; setOllamaUI(false);
+}
+
+function setOllamaUI(up){
+  document.getElementById('ollama-dot').className='dot '+(up?'online':'offline');
+  document.getElementById('ollama-text').textContent=up?'Ollama online':'Ollama offline';
+}
+
+async function askOllama(prompt){
+  if(!ollamaUp) return null;
+  const model=document.getElementById('model-select').value;
+  try{
+   
+    const r = await fetch(ollamaUrl+'/api/generate',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model,prompt,stream:false}),
+    });
+    console.log("[Ollama] Model:", model);
+    console.log("[Ollama] Prompt:", prompt);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    clearTimeout(timeoutId);
+    const response = (await r.json()).response;
+    // console.log('[Ollama] Prompt:', prompt);
+    console.log('[Ollama] Response:', response);
+
+    return response;
+  }catch(e){ 
+    console.error('Ollama request failed:', e);
+    return null;
+   }
+}
+
+// ════════════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════════════
+let chess=new Chess(), moves=[], curIdx=0, gameHdr={};
+let sfCache={}, aiCache={}, cancelled=false;
+
+// ════════════════════════════════════════════════
+//  LOAD / CLEAR
+// ════════════════════════════════════════════════
+function loadPGN(){
+  const pgn=document.getElementById('pgn-input').value.trim();
+  if(!pgn) return;
+  try{
+    const p=parsePGN(pgn);
+    gameHdr=p.hdr; moves=p.moves;
+    if(!moves.length){setStatus('No moves found');return;}
+
+    chess=new Chess();
+    for(let i=0;i<moves.length;i++){
+      if(!chess.apply(moves[i])){
+        const mn=Math.ceil((i+1)/2), side=i%2===0?'White':'Black';
+        setStatus(`⚠ Failed on move ${mn} (${side}): "${moves[i]}"`);
+        moves=moves.slice(0,i); break;
+      }
+    }
+    if(!moves.length){setStatus('No valid moves');return;}
+
+    sfCache={}; aiCache={}; cancelled=false; curIdx=0;
+    buildMoveList(); drawBoard(0); setPlayerBars(); updateNav();
+    showOnly('placeholder');
+    document.getElementById('btn-run').disabled=false;
+    // Load any cached analysis from localStorage for this game
+    const savedKey = gameKey();
+    try {
+      const saved = localStorage.getItem(savedKey);
+      if(saved) {
+        const parsed = JSON.parse(saved);
+        sfCache = parsed.sf || {};
+        aiCache = parsed.ai || {};
+        // Restore badges for cached moves
+        for(const [idx,res] of Object.entries(sfCache)){
+          setQDot(parseInt(idx), res.quality);
+          setCpLabel(parseInt(idx), res.cpLoss);
+        }
+        updateDebug(`Loaded ${Object.keys(sfCache).length} cached analyses from storage`);
+      }
+    } catch(e){}
+    setStatus(`Loaded ${moves.length} moves — click a move or press Run`);
+  }catch(e){ setStatus('Parse error: '+e.message); }
+}
+
+function clearGame(){
+  chess=new Chess(); moves=[]; curIdx=0; sfCache={}; aiCache={};
+  document.getElementById('pgn-input').value='';
+  document.getElementById('move-list').innerHTML=
+    '<div style="padding:20px 10px;color:var(--muted);text-align:center;line-height:1.9">Paste a PGN above<br>to load your game</div>';
+  drawBoard(0); showOnly('placeholder');
+  document.getElementById('btn-run').disabled=true;
+  ['white-name','black-name'].forEach((id,i)=>document.getElementById(id).textContent=i?'Black':'White');
+  document.getElementById('white-result').textContent='—';
+  document.getElementById('black-result').textContent='—';
+  setEval(0,null); updateNav();
+  setStatus('Ready — load a PGN to begin');
+}
+
+function setPlayerBars(){
+  const w=gameHdr.White||'White', b=gameHdr.Black||'Black';
+  const we=gameHdr.WhiteElo, be=gameHdr.BlackElo;
+  document.getElementById('white-name').textContent=w+(we&&we!=='?'?` (${we})`:'');
+  document.getElementById('black-name').textContent=b+(be&&be!=='?'?` (${be})`:'');
+  const res=gameHdr.Result||'*';
+  document.getElementById('white-result').textContent=res==='1-0'?'●':res==='0-1'?'○':res==='1/2-1/2'?'½':'—';
+  document.getElementById('black-result').textContent=res==='1-0'?'○':res==='0-1'?'●':res==='1/2-1/2'?'½':'—';
+}
+
+// ════════════════════════════════════════════════
+//  BOARD DRAWING
+// ════════════════════════════════════════════════
+function drawBoard(idx, bestUCI){
+  const snap=chess.positions[idx], el=document.getElementById('board');
+  el.innerHTML='';
+  const lastMv=idx>0?chess.history[idx-1]:null;
+  const bestTo=bestUCI&&bestUCI.length>=4 ? [bestUCI.charCodeAt(2)-97,parseInt(bestUCI[3])-1] : null;
+
+  for(let rank=7;rank>=0;rank--){
+    for(let file=0;file<8;file++){
+      const sq=document.createElement('div');
+      sq.className='sq '+((rank+file)%2===1?'light':'dark');
+      const p=snap.board[7-rank][file];
+      if(p) sq.textContent=GLYPHS[p]||'';
+
+      const light=(rank+file)%2===1;
+      if(file===0){ const c=document.createElement('span'); c.className='coord rank'; c.textContent=rank+1; c.style.color=light?'var(--sq-dark)':'var(--sq-light)'; sq.appendChild(c); }
+      if(rank===0){ const c=document.createElement('span'); c.className='coord file'; c.textContent=String.fromCharCode(97+file); c.style.color=light?'var(--sq-dark)':'var(--sq-light)'; sq.appendChild(c); }
+
+      if(lastMv){
+        if(lastMv.from&&lastMv.from[0]===file&&lastMv.from[1]===rank) sq.classList.add('hl-from');
+        if(lastMv.to  &&lastMv.to[0]  ===file&&lastMv.to[1]  ===rank) sq.classList.add('hl-to');
+      }
+      if(bestTo&&bestTo[0]===file&&bestTo[1]===rank) sq.classList.add('hl-best');
+      el.appendChild(sq);
+    }
+  }
+  document.getElementById('move-counter').textContent=`${idx} / ${moves.length}`;
+}
+
+function setEval(cpFromWhite, mate){
+  document.getElementById('eval-fill').style.width=evalPct(cpFromWhite,mate)+'%';
+  document.getElementById('eval-label').textContent=fmtEval(cpFromWhite,mate);
+}
+
+// ════════════════════════════════════════════════
+//  MOVE LIST
+// ════════════════════════════════════════════════
+function buildMoveList(){
+  const ml=document.getElementById('move-list');
+  let html='';
+  for(let i=0;i<moves.length;i+=2){
+    const mn=Math.floor(i/2)+1;
+    html+=`<div class="move-row">
+      <div class="move-num">${mn}.</div>
+      <button class="move-btn" id="mb${i+1}" onclick="goTo(${i+1})">
+        <span class="q-dot" id="qd${i+1}"></span>${moves[i]}<span class="cp-label" id="cpl${i+1}"></span>
+      </button>
+      ${moves[i+1]?`<button class="move-btn" id="mb${i+2}" onclick="goTo(${i+2})">
+        <span class="q-dot" id="qd${i+2}"></span>${moves[i+1]}<span class="cp-label" id="cpl${i+2}"></span>
+      </button>`:'<div></div>'}
+    </div>`;
+  }
+  ml.innerHTML=html;
+}
+
+const Q_COLORS={ book:'var(--book)',excellent:'var(--excellent)',good:'var(--good)',inaccuracy:'var(--inaccuracy)',mistake:'var(--mistake)',blunder:'var(--blunder)' };
+
+function setQDot(idx,q){ const d=document.getElementById('qd'+idx); if(d)d.style.background=Q_COLORS[q]||'transparent'; }
+function setCpLabel(idx,loss){
+  const el=document.getElementById('cpl'+idx); if(!el)return;
+  if(loss===null||loss<5){el.textContent='';return;}
+  el.textContent=`−${Math.round(loss)}`;
+  el.style.color=loss>100?'var(--blunder)':loss>40?'var(--mistake)':loss>15?'var(--inaccuracy)':'var(--muted)';
+}
+
+// ════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════
+function goTo(idx){
+  if(!moves.length) return;
+  if(idx===-1) idx=moves.length;
+  curIdx=Math.max(0,Math.min(idx,moves.length));
+  const c=sfCache[curIdx];
+  drawBoard(curIdx,c?.bestMove);
+  setEval(c?.cpFromWhite??0, c?.mate??null);
+  updateNav(); hlMove();
+  if(curIdx>0){ if(sfCache[curIdx]) showMoveCard(curIdx); else analyseOne(curIdx); }
+  else showOnly('placeholder');
+}
+function prev(){ goTo(curIdx-1); }
+function next(){ goTo(curIdx+1); }
+
+function hlMove(){
+  document.querySelectorAll('.move-btn').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('mb'+curIdx);
+  if(b){b.classList.add('active');b.scrollIntoView({block:'nearest'});}
+}
+function updateNav(){
+  const n=moves.length;
+  ['btn-start','btn-prev'].forEach(id=>document.getElementById(id).disabled=curIdx===0);
+  ['btn-next','btn-end'].forEach(id=>document.getElementById(id).disabled=curIdx>=n);
+}
+function setStatus(msg){ document.getElementById('status').textContent=msg; }
+
+// ════════════════════════════════════════════════
+//  STOCKFISH: ANALYSE ONE MOVE
+// ════════════════════════════════════════════════
+async function sfForMove(idx){
+  if(sfCache[idx]) return sfCache[idx];
+
+  // Build game state before and after this move
+  const gB=new Chess(), gA=new Chess();
+  for(let i=0;i<idx-1;i++) gB.apply(moves[i]);
+  for(let i=0;i<idx;i++)   gA.apply(moves[i]);
+
+  // Run both analyses in parallel for speed
+  const [rB,rA] = await Promise.all([sfAnalyse(gB.toFEN(),16), sfAnalyse(gA.toFEN(),16)]);
+
+  const isWhite = idx%2===1;
+
+  /*
+    rB.cp = score for the side about to make the move (before)
+    rA.cp = score for the side about to move next (opponent, after)
+
+    Player's outcome from their own view = -rA.cp
+    Loss = rB.cp - (-rA.cp) = rB.cp + rA.cp
+  */
+  let cpLoss=null;
+  if(rB.mate===null && rA.mate===null)
+    cpLoss = Math.max(0, rB.cp + rA.cp);
+
+  // For the eval bar we want white's absolute advantage
+  // If white just moved: rA.cp is from black's view, so white's = -rA.cp
+  // If black just moved: rA.cp is from white's view directly
+  const cpFromWhite = isWhite ? -rA.cp : rA.cp;
+
+  const quality = idx<=10 ? 'book' : cpLossToQuality(cpLoss??0);
+
+  const res = { cpLoss, cpFromWhite, mate:rA.mate, bestMove:rB.bestMove, quality, depth:Math.min(rB.depth,rA.depth) };
+  sfCache[idx]=res;
+  setQDot(idx,quality);
+  setCpLabel(idx,cpLoss);
+  saveToStorage();
+  return res;
+}
+
+// ════════════════════════════════════════════════
+//  SHOW MOVE ANALYSIS CARD
+// ════════════════════════════════════════════════
+function showMoveCard(idx){
+  showOnly('move-card');
+  const sf=sfCache[idx], san=moves[idx-1], mn=Math.ceil(idx/2), isW=idx%2===1;
+
+  document.getElementById('card-move').textContent=`${mn}${isW?'.':'...'} ${san}`;
+  document.getElementById('card-meta').textContent=`${isW?'White':'Black'} · Move ${idx} of ${moves.length}`;
+
+  const q=sf?.quality||'good';
+  const ql={book:'📖 Book',excellent:'★ Excellent',good:'✓ Good',inaccuracy:'⚠ Inaccuracy',mistake:'❌ Mistake',blunder:'💥 Blunder'};
+  document.getElementById('card-badge').innerHTML=`<div class="quality-pill q-${q}">${ql[q]||q}</div>`;
+
+  if(sf){
+    const cpStr=sf.cpLoss!==null?`${Math.round(sf.cpLoss)} cp`:'(opening)';
+    const evalStr=sf.mate!==null?`Mate in ${Math.abs(sf.mate)}`:fmtEval(sf.cpFromWhite,null);
+    document.getElementById('card-sf').innerHTML=`
+      <div class="sf-row"><span class="sf-key">Eval after move</span><span class="sf-value">${evalStr}</span></div>
+      <div class="sf-row"><span class="sf-key">Centipawn loss</span><span class="sf-value">${cpStr}</span></div>
+      <div class="sf-row"><span class="sf-key">Depth</span><span class="sf-value">${sf.depth}</span></div>`;
+    if(sf.bestMove){
+      document.getElementById('best-section').style.display='block';
+      const bm=sf.bestMove;
+      document.getElementById('card-best').textContent=
+        `${bm.slice(0,2)} → ${bm.slice(2,4)}${bm[4]?'='+bm[4].toUpperCase():''} — Stockfish top choice`;
+    } else {
+      document.getElementById('best-section').style.display='none';
+    }
+  }
+
+  const aiEl=document.getElementById('card-explanation');
+  const aiSrc=document.getElementById('card-ai-src');
+  if(aiCache[idx]){
+    aiEl.textContent=aiCache[idx];
+    aiSrc.textContent=`(${document.getElementById('model-select').value})`;
+  } else if(!ollamaUp){
+    aiEl.innerHTML='<div class="offline-note">Ollama offline — Stockfish data above is still accurate.</div>';
+    aiSrc.textContent='';
+  } else {
+    aiEl.innerHTML='<span class="thinking">Thinking</span>';
+    aiSrc.textContent='';
+    fetchExplain(idx,sf);
+  }
+}
+
+async function analyseOne(idx){
+  showOnly('move-card');
+  document.getElementById('card-move').textContent='Analysing...';
+  document.getElementById('card-badge').innerHTML='';
+  document.getElementById('card-sf').innerHTML='';
+  document.getElementById('card-explanation').innerHTML='';
+  setStatus(`Stockfish on move ${idx}...`);
+  const res=await sfForMove(idx);
+  drawBoard(idx,res.bestMove);
+  setEval(res.cpFromWhite,res.mate);
+  showMoveCard(idx);
+  setStatus(`Move ${idx} done`);
+  if(ollamaUp&&!aiCache[idx]) fetchExplain(idx,res);
+}
+
+// ════════════════════════════════════════════════
+//  OLLAMA: EXPLANATION PER MOVE
+// ════════════════════════════════════════════════
+async function fetchExplain(idx, sf){
+  if(aiCache[idx]){ updateExplainUI(idx); return; }
+  const san=moves[idx-1], mn=Math.ceil(idx/2), isW=idx%2===1;
+  const q=sf?.quality||'good', loss=sf?.cpLoss, best=sf?.bestMove;
+  const gameStr=moves.slice(0,idx).map((m,i)=>i%2===0?`${Math.ceil((i+1)/2)}.${m}`:m).join(' ');
+
+  const prompt=`You are a chess coach. In 2-3 plain sentences explain this move.
+
+Game so far: ${gameStr}
+Move played: ${mn}${isW?'.':'...'} ${san} (${isW?'White':'Black'})
+Stockfish assessment: ${q}${loss!==null?`, centipawn loss: ${Math.round(loss)}`:''}${best?`, best was ${best.slice(0,2)}-${best.slice(2,4)}`:''}
+
+What does the move do, why is it ${q}${q==='blunder'||q==='mistake'?', and what should have been played instead':''}? No bullet points.`;
+
+  const reply = await askOllama(prompt);
+  if(reply){ aiCache[idx]=reply.trim(); updateExplainUI(idx); saveToStorage(); }
+  else if(curIdx===idx)
+    document.getElementById('card-explanation').innerHTML='<div class="offline-note">Ollama did not respond. Check it\'s running.</div>';
+}
+
+function updateExplainUI(idx){
+  if(curIdx!==idx) return;
+  const el=document.getElementById('card-explanation');
+  const src=document.getElementById('card-ai-src');
+  el.textContent=aiCache[idx];
+  src.textContent=`(${document.getElementById('model-select').value})`;
+}
+
+// ════════════════════════════════════════════════
+//  RUN ALL
+// ════════════════════════════════════════════════
+async function runAll(){
+  if(!moves.length) return;
+  const btn=document.getElementById('btn-run');
+  if(btn.classList.contains('running')){
+    cancelled=true; btn.classList.remove('running'); btn.textContent='▶▶ Run';
+    document.getElementById('progress-wrap').classList.remove('show');
+    setStatus('Cancelled'); return;
+  }
+  cancelled=false; btn.classList.add('running'); btn.textContent='■ Stop';
+  showOnly(null); // hide all panels while running
+  document.getElementById('progress-wrap').classList.add('show');
+
+  const total=moves.length;
+  setStatus('Phase 1/2 — Stockfish evaluating all moves...');
+  for(let i=1;i<=total;i++){
+    if(cancelled) break;
+    curIdx=i;
+    const res=await sfForMove(i);
+    drawBoard(i,res.bestMove); setEval(res.cpFromWhite,res.mate);
+    hlMove(); updateNav();
+    document.getElementById('progress-fill').style.width=Math.round(i/total*60)+'%';
+    document.getElementById('progress-text').textContent=`Stockfish: ${i}/${total}`;
+    await new Promise(r=>setTimeout(r,20));
+  }
+
+  if(!cancelled){
+    document.getElementById('progress-fill').style.width='70%';
+    setStatus('Phase 2/2 — Ollama writing summary...');
+    document.getElementById('progress-text').textContent='Ollama generating summary...';
+    await buildSummary();
+    document.getElementById('progress-fill').style.width='100%';
+  }
+
+  btn.classList.remove('running'); btn.textContent='▶▶ Run';
+  document.getElementById('progress-wrap').classList.remove('show');
+  if(!cancelled) { saveCurrentGame(); setStatus('Done — click any move to review it'); }
+}
+
+// ════════════════════════════════════════════════
+//  GAME SUMMARY
+// ════════════════════════════════════════════════
+async function buildSummary(){
+  const white=gameHdr.White||'White', black=gameHdr.Black||'Black';
+  const tally={
+    w:{excellent:0,good:0,book:0,inaccuracy:0,mistake:0,blunder:0},
+    b:{excellent:0,good:0,book:0,inaccuracy:0,mistake:0,blunder:0}
+  };
+  const notable=[];
+  for(let i=1;i<=moves.length;i++){
+    const s=sfCache[i]; if(!s) continue;
+    const side=i%2===1?'w':'b';
+    if(tally[side][s.quality]!==undefined) tally[side][s.quality]++;
+    if(['blunder','mistake','excellent'].includes(s.quality))
+      notable.push({i,san:moves[i-1],quality:s.quality,cpLoss:s.cpLoss,best:s.bestMove});
+  }
+
+  let ai=null;
+  if(ollamaUp){
+    const allStr=moves.map((m,i)=>i%2===0?`${Math.ceil((i+1)/2)}.${m}`:m).join(' ');
+    const notStr=notable.slice(0,15).map(n=>
+      `Move ${n.i} (${n.i%2===1?'White':'Black'}, ${n.san}): ${n.quality}${n.cpLoss?`, loss=${Math.round(n.cpLoss)}cp`:''}${n.best?`, best=${n.best.slice(0,2)}-${n.best.slice(2,4)}`:''}`
+    ).join('\n');
+
+    const prompt=`Chess coach. Summarise this game analysis.
+Players: ${white} (White) vs ${black} (Black). Result: ${gameHdr.Result||'?'}
+Moves: ${allStr}
+White stats: ${JSON.stringify(tally.w)}
+Black stats: ${JSON.stringify(tally.b)}
+Key moments:\n${notStr}
+
+Reply ONLY with raw JSON (no markdown, no backticks) ensure json file is valid and parsable, and follow this EXACT structure:
+{
+  "white_rating": <200-2800>,
+  "black_rating": <200-2800>,
+  "white_label": "<Beginner|Novice|Intermediate|Club Player|Advanced|Expert|Master>",
+  "black_label": "<Beginner|Novice|Intermediate|Club Player|Advanced|Expert|Master>",
+  "narrative": "<2-3 sentences on game flow>",
+  "moments": [{"idx":<n>,"san":"<san>","color":"White|Black","why":"<1 sentence>"}],
+  "white_tips": ["<tip>","<tip>","<tip>"],
+  "black_tips": ["<tip>","<tip>","<tip>"]
+}`;
+
+  try{
+    let reply = await askOllama(prompt);
+    //TODO: the JSON parsing is very fragile here, if Ollama doesn't reply EXACTLY as expected it will break.
+    //  In future we should add better error handling and maybe a more robust way to extract the JSON from the reply.
+    console.log('Ollama summary reply:', reply == null);
+
+    console.log('Raw Ollama summary reply:', reply);
+
+    // ai = JSON.parse(reply.replace(/```json|```/g,'').trim());
+    try {
+      ai = JSON.parse(reply);
+    } catch(e) {
+
+      console.error('Error cleaning Ollama reply:', e);
+
+      reply += '}'; // Attempt to fix common issue of missing closing brace
+      try {
+        ai = JSON.parse(reply);
+      } catch(e) {
+        console.error('Failed to parse Ollama summary after cleanup attempt:', e);  
+      ai = null;
+      }
+    }
+    console.log('Parsed AI summary:', ai);
+      
+  }catch(e){
+    console.error("Failed to parse Ollama summary response:", e);
+  }
+}
+
+  renderSummary(ai, white, black, tally);
+}
+
+function renderSummary(ai, white, black, tally){
+  console.log('Summary AI data:', ai);
+  const res=gameHdr.Result||'*';
+  const qE={excellent:'★',good:'✓',inaccuracy:'⚠',mistake:'❌',blunder:'💥',book:'📖'};
+
+  const chips=t=>['excellent','good','inaccuracy','mistake','blunder']
+    .filter(q=>t[q]>0)
+    .map(q=>`<span class="chip" style="color:${Q_COLORS[q]};border-color:${Q_COLORS[q]}40;background:${Q_COLORS[q]}15">${qE[q]} ${t[q]}</span>`)
+    .join('');
+
+  const moments=(ai?.moments||[]).map(m=>{
+    const isW=m.idx%2===1, mn=Math.ceil(m.idx/2);
+    return `<div class="moment" onclick="goTo(${m.idx})"><span class="moment-move">${mn}${isW?'.':'...'} ${m.san}</span> — ${m.why}</div>`;
+  }).join('');
+
+  const tips=arr=>(arr||[]).map(t=>`<div class="tip"><span class="tip-arrow">→</span><span>${t}</span></div>`).join('');
+
+  document.getElementById('summary-card').innerHTML=`
+    <div class="summary-title">Game Report</div>
+    <div class="summary-sub">${white} vs ${black} · ${res}</div>
+    ${!ai?'<div class="offline-note" style="margin-bottom:12px">Ollama offline — ratings unavailable. Accuracy stats are accurate.</div>':''}
+    ${ai?`<div class="ratings">
+      <div class="rating-box rating-white"><div class="rating-player">♔ ${white}</div><div class="rating-number">${ai.white_rating}</div><div class="rating-label">${ai.white_label}</div></div>
+      <div class="rating-box rating-black"><div class="rating-player">♚ ${black}</div><div class="rating-number">${ai.black_rating}</div><div class="rating-label">${ai.black_label}</div></div>
+    </div>`:''}
+    <div class="section">
+      <div class="section-title">Move Accuracy</div>
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px">♔ ${white}</div><div class="chip-row">${chips(tally.w)}</div>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0 4px">♚ ${black}</div><div class="chip-row">${chips(tally.b)}</div>
+    </div>
+    ${ai?.narrative?`<div class="section"><div class="section-title">Narrative</div><div class="section-body">${ai.narrative}</div></div>`:''}
+    ${moments?`<div class="section"><div class="section-title">Key Moments <span style="font-size:8px;color:var(--muted)">(click to jump)</span></div>${moments}</div>`:''}
+    ${ai?.white_tips?.length?`<div class="section"><div class="section-title">♔ ${white} — How to Improve</div>${tips(ai.white_tips)}</div>`:''}
+    ${ai?.black_tips?.length?`<div class="section"><div class="section-title">♚ ${black} — How to Improve</div>${tips(ai.black_tips)}</div>`:''}
+  `;
+  showOnly('summary-card');
+}
+
+// ════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════
+// Show exactly one content panel, hide the others
+function showOnly(id){
+  ['placeholder','summary-card','move-card'].forEach(pid=>{
+    const el=document.getElementById(pid);
+    if(pid==='placeholder') el.style.display=pid===id?'flex':'none';
+    else el.classList.toggle('show', pid===id);
+  });
+}
+
+function toggleSamples(){
+  const m=document.getElementById('samples-menu');
+  m.style.display=m.style.display==='block'?'none':'block';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.samples-wrap'))
+    document.getElementById('samples-menu').style.display='none';
+});
+
+const SAMPLES={
+  immortal:`[Event "London"][White "Adolf Anderssen"][Black "Lionel Kieseritzky"][Result "1-0"]
+1.e4 e5 2.f4 exf4 3.Bc4 Qh4+ 4.Kf1 b5 5.Bxb5 Nf6 6.Nf3 Qh6 7.d3 Nh5 8.Nh4 Qg5 9.Nf5 c6 10.g4 Nf6 11.Rg1 cxb5 12.h4 Qg6 13.h5 Qg5 14.Qf3 Ng8 15.Bxf4 Qf6 16.Nc3 Bc5 17.Nd5 Qxb2 18.Bd6 Bxg1 19.e5 Qxa1+ 20.Ke2 Na6 21.Nxg7+ Kd8 22.Qf6+ Nxf6 23.Be7# 1-0`,
+  chesscom:`[Event "Live Chess"][White "Salmoon07"][Black "TheWalrus2020"][Result "1-0"][WhiteElo "457"][BlackElo "446"]
+1. e4 e5 2. Nf3 Nf6 3. Nc3 Nc6 4. Bc4 d5 $2 5. Bb5 $9 (5. exd5) 5... Bd7 $6 6. Nxd5 Nxe4 7. O-O Nd4 $2 8. Nxd4 $1 exd4 $6 9. Qe1 $2 f5 $6 10. Bxd7+ $9 Qxd7 11. d3 Qxd5 $1 12. dxe4 $2 fxe4 13. b4 O-O-O 14. a4 Bxb4 $4 15. Qxb4 d3 $6 16. cxd3 exd3 17. Bf4 d2 $6 18. Rfd1 Rhe8 19. Kf1 $9 Qd3+ $9 20. Kg1 Re1+ $6 21. Rxe1 d1=Q 22. Rexd1 $6 Qxd1+ 23. Qe1 $1 Qd4 $6 24. g3 h6 25. a5 $6 g5 26. Be3 Qe4 27. a6 bxa6 28. Rxa6 Qd5 29. Rxh6 g4 30. Bxa7 c5 31. Rh4 Qd4 32. Qc1 Qd1+ 33. Qxd1 $1 Rxd1+ 34. Kg2 Rc1 35. Rxg4 c4 36. Be3 Rc3 37. h4 Kd7 38. h5 Rxe3 $6 39. Rh4 $9 c3 $2 40. fxe3 c2 $6 41. Rc4 Kd6 $6 42. Rxc2 Ke6 43. Rc1 Kf6 44. Rg1 $9 Kg7 $2 45. Rh1 Kh7 46. h6 Kh8 47. Kf3 Kh7 48. Kf4 Kg6 49. g4 Kh7 50. Rg1 $9 Kh8 $9 51. g5 Kh7 52. g6+ Kxh6 53. g7 Kh5 54. g8=Q Kh6 55. Qg6# 1-0`,
+  lichess:`[Event "casual blitz game"][White "Anonymous"][Black "Anonymous"][Result "0-1"][WhiteElo "?"][BlackElo "?"][Opening "Philidor Defense"]
+1. e4 { [%clk 0:05:00] } 1... e5 { [%clk 0:05:00] } 2. Nf3 { [%clk 0:04:59] } 2... d6 { [%clk 0:04:57] } 3. Bc4 { [%clk 0:04:54] } { C41 Philidor Defense } 3... Be6 { [%clk 0:04:51] } 4. d3 { [%clk 0:04:48] } 4... Bxc4 { [%clk 0:04:38] } 5. dxc4 { [%clk 0:04:46] } 5... Nf6 { [%clk 0:04:36] } 6. Nc3 { [%clk 0:04:43] } 6... c6 { [%clk 0:04:31] } 7. Bg5 { [%clk 0:04:31] } 7... h6 { [%clk 0:03:53] } 8. Be3 { [%clk 0:04:22] } 8... Ng4 { [%clk 0:03:49] } 9. Qd2 { [%clk 0:03:52] } 9... Nd7 { [%clk 0:03:43] } 10. h3 { [%clk 0:03:49] } 10... Nxe3 { [%clk 0:03:40] } 11. Qxe3 { [%clk 0:03:48] } 11... Qb6 { [%clk 0:03:35] } 12. Qxb6 { [%clk 0:03:42] } 12... Nxb6 { [%clk 0:03:33] } 13. O-O-O { [%clk 0:03:38] } 13... Nxc4 { [%clk 0:03:31] } 14. g4 { [%clk 0:03:32] } 14... b5 { [%clk 0:03:16] } 15. h4 { [%clk 0:03:19] } 15... b4 { [%clk 0:02:36] } 16. Na4 { [%clk 0:02:25] } 16... Be7 { [%clk 0:02:25] } 17. g5 { [%clk 0:02:53] } 17... h5 { [%clk 0:02:23] } 18. b3 { [%clk 0:02:36] } 18... Na3 { [%clk 0:02:14] } 19. Nd2 { [%clk 0:02:20] } 19... Kd7 { [%clk 0:01:48] } 20. Nf3 { [%clk 0:02:01] } 20... a5 { [%clk 0:01:37] } 21. Nxe5+ { [%clk 0:01:57] } 21... Ke6 { [%clk 0:01:35] } 22. Nxc6 { [%clk 0:01:48] } 22... f6 { [%clk 0:01:28] } 23. Nxe7 { [%clk 0:01:47] } 23... fxg5 { [%clk 0:01:26] } 24. Ng6 { [%clk 0:01:40] } 24... Rhc8 { [%clk 0:01:23] } 25. Rd2 { [%clk 0:01:22] } 25... Nb5 { [%clk 0:01:14] } 26. hxg5 { [%clk 0:01:10] } 26... Nc3 { [%clk 0:01:12] } 27. Nf4+ { [%clk 0:00:56] } 27... Ke5 { [%clk 0:01:10] } 28. Nd3+ { [%clk 0:00:46] } 28... Kxe4 { [%clk 0:01:06] } 29. Rh4+ { [%clk 0:00:40] } 29... Kf3 { [%clk 0:01:02] } 30. Nxc3 { [%clk 0:00:33] } 30... Rxc3 { [%clk 0:00:59] } 31. Rh3+ { [%clk 0:00:28] } 31... Kg4 { [%clk 0:00:57] } 32. Rg3+ { [%clk 0:00:23] } 32... Kf5 { [%clk 0:00:51] } 33. Rf3+ { [%clk 0:00:15] } 33... Kg6 { [%clk 0:00:49] } 34. Ne1 { [%clk 0:00:09] } 34... Rxf3 { [%clk 0:00:47] } 35. Nxf3 { [%clk 0:00:08] } 35... Rf8 { [%clk 0:00:44] } 36. Nh4+ { [%clk 0:00:02] } 36... Kxg5 { [%clk 0:00:42] } 0-1`
+};
+
+function loadSample(key){ document.getElementById('pgn-input').value=SAMPLES[key]||''; document.getElementById('samples-menu').style.display='none'; loadPGN(); }
+function openModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.key==='ArrowLeft') prev();
+  if(e.key==='ArrowRight') next();
+  if(e.key==='Home') goTo(0);
+  if(e.key==='End')  goTo(-1);
+});
+
+// ── PERSISTENCE ──
+function gameKey(){
+  // Key based on players + date so each game has its own cache
+  const w=gameHdr.White||'?', b=gameHdr.Black||'?', d=gameHdr.Date||'?', e=gameHdr.ECO||'';
+  return `cr_${w}_${b}_${d}_${e}`.replace(/\s+/g,'_').slice(0,80);
+}
+
+function saveToStorage(){
+  try {
+    const key=gameKey();
+    if(!key||key==='cr_?_?_?_') return; // don't save if no game loaded
+    localStorage.setItem(key, JSON.stringify({sf:sfCache, ai:aiCache}));
+  } catch(e){}
+}
+
+function listSavedGames(){
+  const games=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('cr_')) games.push(k);
+  }
+  return games;
+}
+
+// ════════════════════════════════════════════════
+//  PANEL RESIZING
+//
+//  How it works:
+//  1. User mousedowns on a .drag-handle div
+//  2. We record the starting X position and the current panel width
+//  3. On mousemove we calculate delta = currentX - startX
+//     and set the panel width to startWidth + delta (or - delta for right panel)
+//  4. On mouseup we clean up the event listeners
+//
+//  We attach mousemove/mouseup to the DOCUMENT (not the handle) so
+//  the drag keeps working even if the mouse moves faster than the handle.
+//
+//  We also save the widths to localStorage so they persist across sessions.
+// ════════════════════════════════════════════════
+
+function initResize() {
+  const leftPanel  = document.querySelector('.left');
+  const rightPanel = document.querySelector('.right');
+  const handleL    = document.getElementById('drag-left');
+  const handleR    = document.getElementById('drag-right');
+
+  // Restore saved widths from localStorage
+  const savedL = localStorage.getItem('cr_panel_left');
+  const savedR = localStorage.getItem('cr_panel_right');
+  if(savedL) leftPanel.style.width  = savedL + 'px';
+  if(savedR) rightPanel.style.width = savedR + 'px';
+
+  // ── Left handle: drags the left panel wider/narrower ──
+  handleL.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const startX     = e.clientX;
+    const startWidth = leftPanel.getBoundingClientRect().width;
+    handleL.classList.add('dragging');
+
+    const onMove = e => {
+      const delta    = e.clientX - startX;
+      const newWidth = Math.max(140, Math.min(500, startWidth + delta));
+      leftPanel.style.width = newWidth + 'px';
+    };
+
+    const onUp = () => {
+      handleL.classList.remove('dragging');
+      // Save width so it persists on next open
+      localStorage.setItem('cr_panel_left', parseInt(leftPanel.style.width));
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+
+  // ── Right handle: drags the right panel wider/narrower ──
+  //    Note: moving right DECREASES right panel width (it grows leftward)
+  //    so delta is subtracted not added.
+  handleR.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const startX     = e.clientX;
+    const startWidth = rightPanel.getBoundingClientRect().width;
+    handleR.classList.add('dragging');
+
+    const onMove = e => {
+      const delta    = e.clientX - startX;   // positive = moved right
+      const newWidth = Math.max(200, Math.min(700, startWidth - delta));
+      rightPanel.style.width = newWidth + 'px';
+    };
+
+    const onUp = () => {
+      handleR.classList.remove('dragging');
+      localStorage.setItem('cr_panel_right', parseInt(rightPanel.style.width));
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+}
+
+// ════════════════════════════════════════════════
+//  SAVED GAMES DRAWER
+//
+//  Data model: each saved game is stored in localStorage as:
+//    Key:   "crgame_<timestamp>"
+//    Value: JSON string of { pgn, white, black, date, result,
+//                            sfCache, aiCache, savedAt }
+//
+//  We use a timestamp key so games naturally sort by recency
+//  and there are no key collisions between different games.
+//
+//  We keep a max of 20 saved games — oldest are removed when
+//  you exceed that limit (like a circular buffer).
+// ════════════════════════════════════════════════
+
+const MAX_SAVED = 20;
+const SAVE_PREFIX = 'crgame_';
+
+// Called after Run completes — saves the current game automatically
+function saveCurrentGame() {
+  if(!moves.length) return;
+  const pgn = document.getElementById('pgn-input').value.trim();
+  if(!pgn) return;
+
+  // Build the save object
+  const record = {
+    pgn,
+    white:   gameHdr.White  || 'White',
+    black:   gameHdr.Black  || 'Black',
+    date:    gameHdr.Date   || '',
+    result:  gameHdr.Result || '*',
+    eco:     gameHdr.ECO    || '',
+    opening: gameHdr.Opening|| '',
+    moves:   moves.length,
+    sfCache,          // all the Stockfish evaluations
+    aiCache,          // all the Ollama explanations
+    savedAt: Date.now()
+  };
+
+  const key = SAVE_PREFIX + record.savedAt;
+  try {
+    localStorage.setItem(key, JSON.stringify(record));
+    pruneOldGames();
+    updateDebug(`Game saved: ${record.white} vs ${record.black}`);
+  } catch(e) {
+    updateDebug('Save failed (storage full?): ' + e.message);
+  }
+}
+
+// Remove oldest games when we exceed MAX_SAVED
+function pruneOldGames() {
+  const keys = getAllSaveKeys();           // already sorted oldest-first
+  while(keys.length > MAX_SAVED) {
+    localStorage.removeItem(keys.shift()); // remove oldest
+  }
+}
+
+// Get all save keys sorted oldest → newest
+function getAllSaveKeys() {
+  const keys = [];
+  for(let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if(k && k.startsWith(SAVE_PREFIX)) keys.push(k);
+  }
+  return keys.sort(); // timestamp keys sort chronologically
+}
+
+// Open the drawer and populate it
+function openDrawer() {
+  renderDrawer();
+  document.getElementById('saved-drawer').classList.add('open');
+  document.getElementById('drawer-backdrop').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('saved-drawer').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('open');
+}
+
+// Build the list of saved games inside the drawer
+function renderDrawer() {
+  const list = document.getElementById('saved-list');
+  const keys = getAllSaveKeys().reverse(); // newest first
+
+  if(!keys.length) {
+    list.innerHTML = '<div class="drawer-empty">No saved games yet.<br>Run full analysis on a game<br>to save it here automatically.</div>';
+    return;
+  }
+
+  const qColors = {
+    book:'var(--book)', excellent:'var(--excellent)', good:'var(--good)',
+    inaccuracy:'var(--inaccuracy)', mistake:'var(--mistake)', blunder:'var(--blunder)'
+  };
+  const qEmoji = { excellent:'★', good:'✓', inaccuracy:'⚠', mistake:'❌', blunder:'💥', book:'📖' };
+
+  list.innerHTML = keys.map(key => {
+    let rec;
+    try { rec = JSON.parse(localStorage.getItem(key)); } catch(e) { return ''; }
+    if(!rec) return '';
+
+    // Count move qualities for the mini chip display
+    const counts = {};
+    for(const res of Object.values(rec.sfCache||{})) {
+      counts[res.quality] = (counts[res.quality]||0) + 1;
+    }
+
+    const chips = ['blunder','mistake','inaccuracy','good','excellent']
+      .filter(q => counts[q])
+      .map(q => `<span class="chip" style="color:${qColors[q]};border-color:${qColors[q]}40;background:${qColors[q]}15;padding:1px 5px;border-radius:8px;font-size:8px;border:1px solid">${qEmoji[q]} ${counts[q]}</span>`)
+      .join('');
+
+    const dateStr = rec.savedAt ? new Date(rec.savedAt).toLocaleDateString() : rec.date;
+    const opening = rec.opening || rec.eco || '';
+
+    return `<div class="saved-item" onclick="loadSavedGame('${key}')">
+      <button class="saved-item-delete" onclick="deleteSavedGame(event,'${key}')" title="Delete">✕</button>
+      <div class="saved-item-title">${rec.white} vs ${rec.black}</div>
+      <div class="saved-item-meta">
+        ${dateStr} · ${rec.result} · ${rec.moves} moves${opening ? '<br>' + opening : ''}
+      </div>
+      ${chips ? '<div class="saved-item-chips">' + chips + '</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// Load a saved game back into the app
+function loadSavedGame(key) {
+  let rec;
+  try { rec = JSON.parse(localStorage.getItem(key)); } catch(e) { return; }
+  if(!rec) return;
+
+  // Put the PGN back in the textarea and load it
+  document.getElementById('pgn-input').value = rec.pgn;
+  loadPGN();
+
+  // Restore the caches so analysis dots and explanations appear immediately
+  // without needing to re-run Stockfish
+  if(rec.sfCache) {
+    sfCache = rec.sfCache;
+    // Convert string keys back to integers and restore UI
+    for(const [idx, res] of Object.entries(sfCache)) {
+      setQDot(parseInt(idx), res.quality);
+      setCpLabel(parseInt(idx), res.cpLoss);
+    }
+  }
+  if(rec.aiCache) aiCache = rec.aiCache;
+
+  closeDrawer();
+  updateDebug(`Loaded saved game: ${rec.white} vs ${rec.black}`);
+  setStatus(`Loaded saved game: ${rec.white} vs ${rec.black} — ${rec.moves} moves`);
+}
+
+// Delete a single saved game
+function deleteSavedGame(event, key) {
+  event.stopPropagation(); // don't trigger loadSavedGame
+  localStorage.removeItem(key);
+  renderDrawer(); // re-render the list
+}
+
+// ── INIT ──
+initSF();
+drawBoard(0);
+pingOllama();
+setInterval(pingOllama, 10000);
+initResize();
+</script>
+</body>
+</html>
