@@ -251,6 +251,7 @@ textarea::placeholder { color: var(--muted); }
 .analysis { flex:1; overflow-y:auto; padding:14px; }
 .analysis::-webkit-scrollbar { width:3px; }
 .analysis::-webkit-scrollbar-thumb { background:var(--border); }
+.analysis-toggles { display:flex; gap:6px; margin-bottom:10px; }
 
 /* Placeholder */
 .placeholder {
@@ -522,6 +523,12 @@ ollama serve</code>
   <div class="right">
     <div class="panel-title">
       <span>Analysis</span>
+      <toggle class="analysis-toggles radio-group">
+        <label>
+          <input type="checkbox" id="toggle-alternative" checked onchange="renderAnalysis()"> Alternative Prompt</label>
+        <!-- <label><input type="checkbox" id="toggle-alternative" checked onchange="renderAnalysis()"> Stockfish</label> -->
+        <!-- <label><input type="checkbox" id="toggle-ollama" checked onchange="renderAnalysis()"> Ollama</label> -->
+       </toggle>
       <span style="color:var(--muted);font-size:9px">Stockfish + Ollama</span>
     </div>
     <div class="progress-wrap" id="progress-wrap">
@@ -906,6 +913,7 @@ function calcCpLoss(cpBefore, cpAfter){
 }
 
 function cpLossToQuality(loss){
+  console.log('Calculating quality for loss:', loss);
   if(loss <  5)  return 'excellent';
   if(loss < 20)  return 'good';
   if(loss < 50)  return 'inaccuracy';
@@ -959,7 +967,15 @@ async function askOllama(prompt){
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     clearTimeout(timeoutId);
-    const response = (await r.json()).response;
+    
+    let response = null 
+    try {
+       response = (await r.json()).response;
+
+    } catch(e) {
+      console.err("Failed to get json frim the response... maybe you used alternative response? "+e);
+       response = await r.body
+    }
     // console.log('[Ollama] Prompt:', prompt);
     console.log('[Ollama] Response:', response);
 
@@ -1320,6 +1336,7 @@ async function runAll(){
 //  GAME SUMMARY
 // ════════════════════════════════════════════════
 async function buildSummary(){
+  
   const white=gameHdr.White||'White', black=gameHdr.Black||'Black';
   const tally={
     w:{excellent:0,good:0,book:0,inaccuracy:0,mistake:0,blunder:0},
@@ -1360,11 +1377,21 @@ Reply ONLY with raw JSON (no markdown, no backticks) ensure json file is valid a
   "black_tips": ["<tip>","<tip>","<tip>"]
 }`;
 
+
+    const alternative_prompt = `You are a chess coach for TheWalrus2020, they were ${white === 'TheWalrus2020' ? 'White' : 'Black'} in this game. 
+    First summarize this game, explain why the result happened, and what the major mistakes are in this game. Then teach TheWalrus2020 what to do differently and why. 
+   
+     Players: ${white} (White) vs ${black} (Black). Result: ${gameHdr.Result||'?'}
+Moves: ${allStr}
+White stats: ${JSON.stringify(tally.w)}
+Black stats: ${JSON.stringify(tally.b)}
+Key moments:\n${notStr}
+`;
+
   try{
-    let reply = await askOllama(prompt);
+    let reply = await askOllama(alternative_prompt);
     //TODO: the JSON parsing is very fragile here, if Ollama doesn't reply EXACTLY as expected it will break.
     //  In future we should add better error handling and maybe a more robust way to extract the JSON from the reply.
-    console.log('Ollama summary reply:', reply == null);
 
     console.log('Raw Ollama summary reply:', reply);
 
@@ -1380,7 +1407,7 @@ Reply ONLY with raw JSON (no markdown, no backticks) ensure json file is valid a
         ai = JSON.parse(reply);
       } catch(e) {
         console.error('Failed to parse Ollama summary after cleanup attempt:', e);  
-      ai = null;
+        ai = reply; // Fallback to raw reply if parsing fails
       }
     }
     console.log('Parsed AI summary:', ai);
@@ -1423,6 +1450,7 @@ function renderSummary(ai, white, black, tally){
       <div style="font-size:9px;color:var(--muted);margin-bottom:4px">♔ ${white}</div><div class="chip-row">${chips(tally.w)}</div>
       <div style="font-size:9px;color:var(--muted);margin:8px 0 4px">♚ ${black}</div><div class="chip-row">${chips(tally.b)}</div>
     </div>
+    ${document.getElementById("toggle-alternative").value ? `<div class="section"><div class="section-title">Narrative</div><div class="section-body">${ai}</div></div>`:''}
     ${ai?.narrative?`<div class="section"><div class="section-title">Narrative</div><div class="section-body">${ai.narrative}</div></div>`:''}
     ${moments?`<div class="section"><div class="section-title">Key Moments <span style="font-size:8px;color:var(--muted)">(click to jump)</span></div>${moments}</div>`:''}
     ${ai?.white_tips?.length?`<div class="section"><div class="section-title">♔ ${white} — How to Improve</div>${tips(ai.white_tips)}</div>`:''}
