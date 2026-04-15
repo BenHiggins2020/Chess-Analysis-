@@ -102,9 +102,29 @@ export const handleBishopMove = (fromSquare, toSquare) => {
     try {
         calculateBishopPath(fromSquare, toSquare);
 
-        // const piece = fromSquare.piece;
-        // const chessboard = fromSquare.chessboard;
+        const piece = fromSquare.piece;
+        const chessboard = fromSquare.chessboard;
+        const isNormalMove = toSquare.piece === null;
 
+        const isLegalMove = piece.moves.includes(toSquare)
+        const isCaptureMove = toSquare.piece !== null && toSquare.piece.color !== piece.color
+
+
+        if (isNormalMove) { // no piece here
+            if (isLegalMove) { // within bounds.
+                return true;
+            } else {
+                console.warn(TAG + `This is not a legal move, because there is a friendly piece on the square.`)
+            }
+        }
+
+        if (isCaptureMove) {
+            return true;
+        }
+        console.log(TAG + `Not a valid move ( ${fromSquare.position} -> ${toSquare.position}), violates one of these rules: 
+            \n Is it a legal capture ${isCaptureMove}
+            \n Is legal positional move: ${isLegalMove}`)
+        return false;
         // const isDiagonalMove = Math.abs(fromSquare.file.charCodeAt(0) - toSquare.file.charCodeAt(0)) === Math.abs(fromSquare.rank - toSquare.rank);
 
         // // Use Slope to calculate bishop move:
@@ -172,9 +192,6 @@ export const handleBishopMove = (fromSquare, toSquare) => {
 
 export const calculateBishopPath = (fromSquare, toSquare) => {
 
-
-
-    // console.log(TAG + `Calculating bishop path from ${fromSquare.file}${fromSquare.rank}`);
     const chessboard = fromSquare.chessboard;
     const selectedPiece = fromSquare.piece;
 
