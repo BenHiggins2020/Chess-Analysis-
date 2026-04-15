@@ -65,6 +65,8 @@ export class Chessboard {
                 // fromSquare.piece = null;
             } else {
                 console.error(this.TAG + `Invalid move for piece ${piece.type} from ${fromCoord} to ${toCoord}`);
+                GameStateManager.getInstance().selected.onDeselected();
+
                 return; // Do nothing if the move is invalid
             }
         }
@@ -82,6 +84,7 @@ export class Chessboard {
 
         this.gameState.get(fromSquare.position).removePiece()
         this.gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
+        GameStateManager.getInstance().selected.onDeselected();
 
         // this.gameState.get(fromSquare.position).piece = null; // Clear the piece from the original square in the game state
         // this.gameState.get(toSquare.position).piece = piece; // Set the piece on the new square in the game state

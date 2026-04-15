@@ -125,65 +125,7 @@ export const handleBishopMove = (fromSquare, toSquare) => {
             \n Is it a legal capture ${isCaptureMove}
             \n Is legal positional move: ${isLegalMove}`)
         return false;
-        // const isDiagonalMove = Math.abs(fromSquare.file.charCodeAt(0) - toSquare.file.charCodeAt(0)) === Math.abs(fromSquare.rank - toSquare.rank);
 
-        // // Use Slope to calculate bishop move:
-        // // y = mx + b
-        // const fileDiff = Math.abs(fromSquare.file.charCodeAt(0) - toSquare.file.charCodeAt(0));
-        // const rankDiff = Math.abs(fromSquare.rank - toSquare.rank);
-
-        // // y1 - y2 / x1 - x2
-        // const slope = (toSquare.rank - fromSquare.rank) / (toSquare.file.charCodeAt(0) - fromSquare.file.charCodeAt(0));
-
-        // //calculate y-intercept (b) using one of the points (x1, y1) 
-        // const yIntercept = toSquare.rank - slope * toSquare.file.charCodeAt(0);
-
-        // // use the char codes to step through the file. 
-        // let ChangeInX = toSquare.file.charCodeAt(0) - fromSquare.file.charCodeAt(0);
-        // let ChangeInY = toSquare.rank - fromSquare.rank;
-        // let stepX = ChangeInX / Math.abs(ChangeInX); // will be either 1 or -1
-        // let stepY = ChangeInY / Math.abs(ChangeInY); // will be either 1 or -1
-
-        // // How many steps to take is equal to the absolute value of the change in x (or y, since they should be the same for a diagonal move)
-        // // 2. Determine the direction of the step (+1 or -1)
-        // const fileStep = fileDiff > 0 ? 1 : -1;
-        // const rankStep = rankDiff > 0 ? 1 : -1;
-
-        // // console.log(TAG + `got change in file: ${ChangeInX}`)
-        // // console.log(TAG + `got change in rank: ${ChangeInY}`)
-
-        // // 3. Iterate through the path
-        // let currentFileCode = fromSquare.file.charCodeAt(0) + stepX;
-        // let currentRank = fromSquare.rank + stepY;
-
-        // const targetFileCode = toSquare.file.charCodeAt(0);
-
-        // // the step is wrong here. 
-        // while (currentFileCode !== targetFileCode) {
-        //     const currentCoord = `${String.fromCharCode(currentFileCode)}${currentRank}`;
-        //     // console.log(TAG + `Checking path at ${currentCoord} for obstruction.`);
-        //     const squareToCheck = chessboard.gameState.get(currentCoord);
-
-        //     // console.log(TAG + `Checking square ${currentCoord} for obstruction. Piece on square:`, squareToCheck.piece);
-
-        //     if (squareToCheck && squareToCheck.piece !== 'empty') {
-        //         // console.log(`Path blocked at: ${currentCoord}`);
-        //         return false; // Path is blocked
-        //     }
-
-        //     // Move to the next square in the diagonal
-        //     currentFileCode += fileStep;
-        //     currentRank += rankStep;
-        // }
-
-
-
-        // if (!isDiagonalMove) {
-        //     console.error(TAG + "Invalid move: Bishops can only move diagonally.");
-        //     return false;
-        // }
-
-        return true; // Placeholder: allow all moves for now
     } catch (e) {
         console.error(TAG + `ERROR: ${e}`)
     }
@@ -228,7 +170,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     //TODO: add function to repalce duplicate code. 
     function shouldBreak() {
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
-            console.log(TAG + `Reached edge of board`);
+            // console.log(TAG + `Reached edge of board`);
             return true; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
@@ -239,7 +181,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
     }
 
-    console.log(TAG + `calculate left + up `);
+    // console.log(TAG + `calculate left + up `);
     for (let i = 0; i < maxStepsLeft; i++) {
 
         nxtX -= 1; // move left one file
@@ -251,7 +193,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
 
 
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
-            console.log(TAG + `Reached edge of board`);
+            // console.log(TAG + `Reached edge of board`);
             break; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
@@ -264,7 +206,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
 
     nxtX = x; // file as char code
     nxtY = y; // rank
-    console.log(TAG + `calculate steps left + down`);
+    // console.log(TAG + `calculate steps left + down`);
     for (let i = 0; i < maxStepsLeft; i++) {
 
         nxtX -= 1; // move left one file
@@ -274,7 +216,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         const pos = file + nxtY
 
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
-            console.log(TAG + `Reached edge of board`);
+            // console.log(TAG + `Reached edge of board`);
             break; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
@@ -291,7 +233,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     // Moving right and down, increasing file, decreasing rank
     nxtX = x;
     nxtY = y;
-    console.log(TAG + `calculate right + down`)
+    // console.log(TAG + `calculate right + down`)
 
     for (let i = 0; i < maxStepsRight; i++) {
 
@@ -301,7 +243,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
-            console.log(TAG + `Reached edge of board at ${file}${nxtY}, stopping right path calculation.`);
+            // console.log(TAG + `Reached edge of board at ${file}${nxtY}, stopping right path calculation.`);
             break; // stop if we go out of bounds
         }
 
@@ -316,16 +258,16 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
 
     nxtX = x;
     nxtY = y;
-    console.log(TAG + ` calculate right + up`);
+    // console.log(TAG + ` calculate right + up`);
     for (let i = 0; i < maxStepsRight; i++) {
         nxtX += 1; // move right one file
         nxtY += 1; // move up according to slope
 
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY
-        console.warn(TAG + `Checking square: ${pos}`)
+        // console.warn(TAG + `Checking square: ${pos}`)
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
-            console.log(TAG + `Reached edge of board at ${file}${nxtY}, stopping right path calculation.`);
+            // console.log(TAG + `Reached edge of board at ${file}${nxtY}, stopping right path calculation.`);
             break; // stop if we go out of bounds
         }
 

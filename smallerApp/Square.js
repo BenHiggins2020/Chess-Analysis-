@@ -1,6 +1,7 @@
 import { Piece } from "./Piece.js";
 import { handlePawnMove, calculateBishopPath } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
+import { GameStateManager } from "./GameStateManage.js";
 
 /**
  * Square class represents each square on the chessboard, holding information about its file, rank, piece, and color.
@@ -139,7 +140,7 @@ export class Square {
     setupPieceUI = () => {
         const piece = this.piece.UI_ref;
         let selectedPiece = null; // used for dragging 
-        let clickedPiece = null; // used to detemerine clicked piece which shows moves, 
+        //going to use gamestatemanager for this 
 
         piece.addEventListener('mousedown', (e) => {
             // console.log(this.TAG + "Mouse-down event: ", e);
@@ -209,18 +210,24 @@ export class Square {
 
         this.UI_ref.addEventListener('click', () => {
 
+
             if (this.piece === null || this.piece === "empty") return
+
 
             console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
 
-            if (this.piece === clickedPiece) {
+            if (this.piece === GameStateManager.getInstance().selected) {
                 console.warn(this.TAG + ` this piece already equals selected piece. we should deselect it! `)
-                clickedPiece.onDeselected();
-                clickedPiece = null;
+                GameStateManager.getInstance().selected.onDeselected();
+                GameStateManager.getInstance().selected = null;
                 return;
             }
 
-            clickedPiece = this.piece
+            // GameStateManager.getInstance.selected.onDeselected() // deselect other piece, 
+
+
+            GameStateManager.getInstance().selected = this.piece
+
             switch (this.piece.type.toString().toUpperCase()) {
                 case 'P':
                     // console.log(this.TAG + "Pawn clicked at: " + this.file + this.rank);
@@ -233,7 +240,7 @@ export class Square {
             }
 
             //After moves are calculated, trigger onselected
-            clickedPiece.onSelected();
+            GameStateManager.getInstance().selected.onSelected();
 
         });
     }
