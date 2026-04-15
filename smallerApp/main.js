@@ -1,7 +1,10 @@
-import { Chessboard, Square } from "./chess-review-offline.js";
+import { Chessboard } from "./Chessboard.js";
+import { Square } from "./Square.js";
+import { Piece } from "./Piece.js";
+import { GameStateManager } from "./GameStateManage.js"
 console.log("Script")
 const board = document.getElementById("board");
-
+const gameState = new GameStateManager();
 const game = new Chessboard();
 
 
