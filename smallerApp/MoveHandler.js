@@ -172,6 +172,8 @@ export const handleBishopMove = (fromSquare, toSquare) => {
 
 export const calculateBishopPath = (fromSquare, toSquare) => {
 
+
+
     // console.log(TAG + `Calculating bishop path from ${fromSquare.file}${fromSquare.rank}`);
     const chessboard = fromSquare.chessboard;
     const selectedPiece = fromSquare.piece;
@@ -205,6 +207,21 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     let nxtX = x; // file as char code
     let nxtY = y; // rank
 
+
+    //TODO: add function to repalce duplicate code. 
+    function shouldBreak() {
+        if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
+            console.log(TAG + `Reached edge of board`);
+            return true; // stop if we go out of bounds
+        }
+        const sqr = chessboard.gameState.get(pos)
+        squares.push(sqr)
+        if (sqr.piece !== null) {
+            // There is a piece on the square, lets include this as the last one. 
+            return true;
+        }
+    }
+
     console.log(TAG + `calculate left + up `);
     for (let i = 0; i < maxStepsLeft; i++) {
 
@@ -214,12 +231,18 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY
 
+
+
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
             console.log(TAG + `Reached edge of board`);
             break; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
         squares.push(sqr)
+        if (sqr.piece !== null) {
+            // There is a piece on the square, lets include this as the last one. 
+            break;
+        }
     }
 
     nxtX = x; // file as char code
@@ -239,7 +262,10 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
         const sqr = chessboard.gameState.get(pos)
         squares.push(sqr)
-        // console.log(TAG + `Checking left path: ${file}${nxtY}`);
+        if (sqr.piece !== null) {
+            // There is a piece on the square, lets include this as the last one. 
+            break;
+        }
     }
 
 
@@ -263,15 +289,10 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
 
         const sqr = chessboard.gameState.get(pos)
-        const piece = sqr.piece // checked square piece
         squares.push(sqr)
-
-        if (piece !== null && piece !== "empty") {
-            console.log(TAG + `found piece on square: `, piece)
-            if (piece.color !== selectedPiece.color) {
-                console.log(TAG + ` checking square ${pos} for piece: ${piece}`)
-            }
-
+        if (sqr.piece !== null) {
+            // There is a piece on the square, lets include this as the last one. 
+            break;
         }
 
     }
@@ -292,8 +313,11 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
 
         const sqr = chessboard.gameState.get(pos)
-        const piece = sqr.piece // checked square piece
         squares.push(sqr)
+        if (sqr.piece !== null) {
+            // There is a piece on the square, lets include this as the last one. 
+            break;
+        }
     }
 
     selectedPiece.moves = squares;
