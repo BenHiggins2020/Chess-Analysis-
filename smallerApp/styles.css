@@ -68,10 +68,12 @@
         background-color: #BED4CB;
      }
 
-     /* .square[-moz-drag-over] {
-        filter: brightness(1.2);
-        outline: 2px dashed rgba(0,0,0,0.3);
-     } */
+     .draggin-now {
+        position: fixed; 
+        pointer-events: none;
+        z-index: 1000;
+        transform: translate(-50%,-50%)
+     }
      
     .dark-square { 
         background-color: #F6F09F;
