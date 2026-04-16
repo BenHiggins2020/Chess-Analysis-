@@ -1,6 +1,7 @@
 
 export class GameStateManager {
     static #instance = null;
+    #selected = null
 
     constructor(name) {
         if (GameStateManager.#instance) {
@@ -10,9 +11,26 @@ export class GameStateManager {
         GameStateManager.#instance = this;
 
         this.gameState = new Map();
+    }
 
-        this.selected = null
+    setSelected(piece) {
+        if (this.#selected !== null) {
+            this.#selected.onDeselected();
+        }
 
+        // Deselect on second selection. 
+        if (this.#selected === piece) {
+            this.#selected.onDeselected();
+            return;
+        }
+        this.#selected = piece
+        this.#selected.onSelected();
+    }
+
+    deselect() {
+        if (this.#selected !== null) {
+            this.#selected.onDeselected();
+        }
     }
 
     static getInstance(name = "Default Instance") {

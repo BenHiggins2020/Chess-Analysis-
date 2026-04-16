@@ -1,5 +1,5 @@
 import { Piece } from "./Piece.js";
-import { handlePawnMove, calculateBishopPath } from "./MoveHandler.js";
+import { handlePawnMove, calculateBishopPath, calculateKnightMoves, handleKnightMove } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
 
@@ -216,17 +216,16 @@ export class Square {
 
             console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
 
-            if (this.piece === GameStateManager.getInstance().selected) {
-                console.warn(this.TAG + ` this piece already equals selected piece. we should deselect it! `)
-                GameStateManager.getInstance().selected.onDeselected();
-                GameStateManager.getInstance().selected = null;
-                return;
-            }
+            // if (this.piece === GameStateManager.getInstance().selected) {
+            //     console.warn(this.TAG + ` this piece already equals selected piece. we should deselect it! `)
+            //     GameStateManager.getInstance().selected.onDeselected();
+            //     GameStateManager.getInstance().selected = null;
+            //     return;
+            // }
 
             // GameStateManager.getInstance.selected.onDeselected() // deselect other piece, 
 
 
-            GameStateManager.getInstance().selected = this.piece
 
             switch (this.piece.type.toString().toUpperCase()) {
                 case 'P':
@@ -236,18 +235,22 @@ export class Square {
                     // console.log(this.TAG + "Bishop clicked at: " + this.file + this.rank);
                     calculateBishopPath(this, null);
                     break;
+                case 'N':
+                    calculateKnightMoves(this)
+                    break;
                 // Add cases for other piece types
             }
 
+            GameStateManager.getInstance().setSelected(this.piece)
+
             //After moves are calculated, trigger onselected
-            GameStateManager.getInstance().selected.onSelected();
 
         });
     }
 
     render() {
         this.UI_ref.innerHTML = '';
-        this.hideMoveDot()
+        this.hideMove()
         if (this.piece !== 'empty' && this.piece !== null) {
             if (this.UI_ref.childElementCount > 0) {
                 console.log(this.TAG + `1 or more elements found. removing. `);
@@ -257,13 +260,13 @@ export class Square {
         }
     }
 
-    showMoveDot() {
+    showMove = () => {
         this.UI_ref.style.opacity = "0.5"
         if (this.piece === null || this.piece === "empty") {
         }
     }
 
-    hideMoveDot() {
+    hideMove = () => {
         this.UI_ref.style.opacity = "1"
         this.UI_ref.backgroundColor = 'transparent'
         if (this.piece === null || this.piece === "empty") {

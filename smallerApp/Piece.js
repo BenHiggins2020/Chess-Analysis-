@@ -1,5 +1,5 @@
 import { Square } from "./Square.js";
-import { handlePawnMove, handleBishopMove } from "./MoveHandler.js";
+import { handlePawnMove, handleBishopMove, handleKnightMove } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 
 
@@ -50,16 +50,20 @@ export class Piece {
     }
 
     onSelected() {
-        console.log(`${this.TAG} onSelected() `)
+        console.log(`${this.TAG} onSelected(), moves = ${this.moves.length}`);
         this.moves.forEach((square) => {
-            square.showMoveDot();
+            console.log(this.TAG + `square is square? = ${(square instanceof Square)}`)
+
+            // console.log(this.TAG + `showing move dot for square: ${square.position}`)
+            square.showMove();
         })
     }
 
     onDeselected() {
-        console.log(`${this.TAG} onDeselected() `)
+        // console.log(`${this.TAG} onDeselected() `)
         this.moves.forEach((square) => {
-            square.hideMoveDot();
+            console.log(this.TAG + `square is square? = ${(square instanceof Square)}`)
+            square.hideMove();
         })
     }
 
@@ -74,11 +78,14 @@ export class Piece {
             case 'B':
             case 'b':
                 return handleBishopMove(fromSquare, toSquare);
+            case 'N':
+            case 'n':
 
-            // Add cases for other piece types
+                return handleKnightMove(fromSquare, toSquare);
+            // Add cases for move piece types
         }
 
-        return true; // Placeholder: allow all moves for now
+        // return true; // Placeholder: allow all moves for now
     }
 
     setupUI() {
