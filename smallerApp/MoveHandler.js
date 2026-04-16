@@ -16,8 +16,10 @@ const validatePosition = (pos) => {
 }
 
 const validateFile = (file) => {
-    if (!(file instanceof String)) {
-        file.toString();
+    if (!(file instanceof String) || !(file instanceof Char)) {
+        console.log(TAG + ` File is not in file format, attempt to convert: ${file} to ${String.fromCharCode(file)}`);
+
+        // return validateFile(String.fromCharCode(file))
     }
 
     if (validFiles.includes(file)) return true;
@@ -25,7 +27,7 @@ const validateFile = (file) => {
 }
 
 const validateRank = (rank) => {
-    if (!(rank instanceof String)) {
+    if (!(rank instanceof String) || !(rank instanceof Char)) {
         rank.toString();
     }
 
@@ -651,17 +653,120 @@ export const calculateQueenMoves = (fromSquare) => {
     moves.push(...rookMoves);
     piece.moves = moves;
 
-    // diagonalMoves.forEach((square) => {
-    //     console.log(TAG + `diagonalMoves Moves: ${square.position}`);
-    // })
-    // rookMoves.forEach((square) => {
-    //     console.log(TAG + `Rook Moves: ${square.position}`);
-    // })
-    // piece.moves.forEach((square) => {
-    // console.log(TAG + `Squares: ${square.position}`);
-    // })
+}
 
-    // console.log(TAG + `Queen move count: ${diagonalMoves.length} +  ${rookMoves.length} = ${moves.length}`);
+export const handleKingMoves = (fromSquare, toSquare) => {
+    const piece = fromSquare.piece;
+    const gameState = fromSquare.chessboard.gameState;
+    const moves = calculateKingMoves(fromSquare);
+    if (moves.includes(toSquare)) {
+        // toSquare is within bounded moves
+        if (toSquare.piece !== null) {
+            // but square has a piece
+            if (toSquare.piece.color !== piece.color) {
+                return true;
+            } else {
+                console.log(TAG + `square has piece but it is the same color.`)
+                return false;
+            }
+        } else { // square is in legal moves and no piece is on that square. 
+            //TODO: Check for a threat... 
+            return true;
+        }
+    }
+    return false;
+}
+
+export const calculateKingMoves = (fromSquare) => {
+    const piece = fromSquare.piece;
+    const gameState = fromSquare.chessboard.gameState;
+    // Filter Diagonal moves, that are only 1 file away? 
+
+    const x = fromSquare.file.charCodeAt(0);
+    const y = fromSquare.rank;
 
 
+    const legalXLeft = x - 1; // left
+    const legalXRight = x + 1; // right
+
+    let legalYDown = y - 1 // down
+    let legalYUp = y + 1; // up
+
+    const moveCoords = [];
+    // can move left
+    if (validateFile(String.fromCharCode(legalXLeft))) {
+
+        // can move left on file
+        let newFile = String.fromCharCode(legalXLeft)
+        let newPos = newFile + y // lateral move 
+        moveCoords.push(newPos);
+
+        if (validateRank(legalYUp.toString())) {
+            newPos = newFile + legalYUp;
+            moveCoords.push(newPos);
+        } else {
+            console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
+        }
+
+        if (validateRank(legalYDown.toString())) {
+            newPos = newFile + legalYDown;
+            moveCoords.push(newPos);
+        } else {
+            console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
+
+        }
+
+    } else {
+        console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
+    }
+
+    //Can move right
+    if (validateFile(String.fromCharCode(legalXRight))) {
+        console.log(TAG + `legal file right:`)
+
+        let newFile = String.fromCharCode(legalXRight)
+        let newPos = newFile + y // lateral move 
+        moveCoords.push(newPos);
+
+        if (validateRank(legalYUp.toString())) {
+            newPos = newFile + legalYUp;
+            moveCoords.push(newPos);
+        } else {
+            console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
+
+        }
+
+        if (validateRank(legalYDown.toString())) {
+            newPos = newFile + legalYDown;
+            moveCoords.push(newPos);
+        } {
+            console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
+
+        }
+    } else {
+        console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
+    }
+
+    // Can move up
+    if (validateRank(legalYUp.toString())) {
+        //straight up, 
+        const newPos = fromSquare.file + legalYUp;
+        moveCoords.push(newPos);
+    }
+
+    // Can move down
+    if (validateRank(legalYDown.toString())) {
+        const newPos = fromSquare.file + legalYDown;
+        moveCoords.push(newPos);
+    }
+
+    const squares = [];
+
+    moveCoords.forEach((pos) => {
+        console.log(TAG + `King move coords: ${pos}`)
+        const sqr = gameState.get(pos);
+        squares.push(sqr)
+    });
+    piece.moves = squares;
+    return squares;
 }

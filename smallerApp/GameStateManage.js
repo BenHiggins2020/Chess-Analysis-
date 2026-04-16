@@ -4,6 +4,7 @@ export class GameStateManager {
     #selected = null
 
     constructor(name) {
+        this.TAG = "GameStateManager: "
         if (GameStateManager.#instance) {
             throw new Error("Use getInstance")
         }
@@ -25,13 +26,16 @@ export class GameStateManager {
 
             return;
         }
+        console.log(this.TAG + `selecting: ${piece.type}`)
         this.#selected = piece
         this.#selected.onSelected();
     }
 
     deselect() {
         if (this.#selected !== null) {
+            console.log(this.TAG + `selecting: ${piece.type}`)
             this.#selected.onDeselected();
+            this.#selected = null;
         }
     }
 

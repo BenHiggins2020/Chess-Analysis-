@@ -1,5 +1,5 @@
 import { Piece } from "./Piece.js";
-import { handlePawnMove, calculateBishopPath, calculateKnightMoves, calculatePawnMoves, calculateQueenMoves, calculateRookMoves, } from "./MoveHandler.js";
+import { handlePawnMove, calculateBishopPath, calculateKnightMoves, calculatePawnMoves, calculateKingMoves, calculateQueenMoves, calculateRookMoves, } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
 
@@ -244,6 +244,9 @@ export class Square {
                     break;
                 case 'Q':
                     calculateQueenMoves(this);
+                    break;
+                case 'K':
+                    calculateKingMoves(this);
                     break;
                 // Add cases for other piece types
             }

@@ -1,5 +1,5 @@
 import { Square } from "./Square.js";
-import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves } from "./MoveHandler.js";
+import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves, handleKingMoves } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 
 
@@ -86,6 +86,9 @@ export class Piece {
             case 'Q':
             case 'q':
                 return handleQueenMoves(fromSquare, toSquare);
+            case 'K':
+            case 'k':
+                return handleKingMoves(fromSquare, toSquare);
 
             // Add cases for move piece types
         }
