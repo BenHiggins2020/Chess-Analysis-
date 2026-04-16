@@ -60,7 +60,6 @@ export class Chessboard {
             if (piece.canMoveTo(fromSquare, toSquare, this)) {
                 // Move the piece
                 console.log(this.TAG + `can move, setting and removing... `);
-
             } else {
                 console.error(this.TAG + `Invalid move for piece ${piece.type} from ${fromCoord} to ${toCoord}`);
                 return; // Do nothing if the move is invalid
@@ -70,16 +69,18 @@ export class Chessboard {
             console.error(this.TAG + `Error during move: ${error}`);
         }
 
-
-
         fromSquare.render();
         toSquare.render();
 
-        //update gamestate: 
-        // console.log(this.TAG + "Updating game state after move...");
+
+        //update gamestate
 
         this.gameState.get(fromSquare.position).removePiece()
         this.gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
+
+        // does piece on square target king or king square? 
+        GameStateManager.getInstance().checkForThreats(toSquare);
+
         GameStateManager.getInstance().deselect();
 
     }

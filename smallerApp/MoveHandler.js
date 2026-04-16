@@ -572,7 +572,7 @@ export const calculateRookMoves = (fromSquare) => {
     let nxtY = y;
     const squares = []
 
-    //dist to right
+    //dist to right (h-file)
     for (let i = 0; i < rightMoves; i++) {
         nxtX += 1
         const file = String.fromCharCode(nxtX);
@@ -585,18 +585,23 @@ export const calculateRookMoves = (fromSquare) => {
 
     nxtX = x;
     nxtY = y;
-    //dist to left
-    for (let i = 0; i < leftMoves; i--) {
+    //dist to left (a-file)
+
+    console.log(TAG + `rook total dist left = ${leftMoves}`)
+
+    for (let i = 0; i < leftMoves; i++) {
         nxtX -= 1
         const file = String.fromCharCode(nxtX);
+        console.log(TAG + `rook moves left: file = ${file} was ${nxtX}`)
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [left] = ${pos}`);
         const sqr = chessboard.gameState.get(pos);
-        // if( !(sqr instanceof Square) ){
-        //     console.error(TAG+ `error: sqr object is not an instance of Square`)
-        // }
+
         squares.push(sqr);
-        if (sqr.piece !== undefined || sqr.piece !== null) break;
+        if (sqr.piece !== null) {
+            // console.log(TAG + `rook moves left: found piece at sqr: ${sqr.position}`)
+            break;
+        };
 
     }
 
@@ -656,9 +661,14 @@ export const calculateQueenMoves = (fromSquare) => {
 }
 
 export const handleKingMoves = (fromSquare, toSquare) => {
+
     const piece = fromSquare.piece;
     const gameState = fromSquare.chessboard.gameState;
     const moves = calculateKingMoves(fromSquare);
+
+    // Check for threats on square, 
+
+
     if (moves.includes(toSquare)) {
         // toSquare is within bounded moves
         if (toSquare.piece !== null) {
@@ -717,12 +727,12 @@ export const calculateKingMoves = (fromSquare) => {
         }
 
     } else {
-        console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
+        // console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
     }
 
     //Can move right
     if (validateFile(String.fromCharCode(legalXRight))) {
-        console.log(TAG + `legal file right:`)
+        // console.log(TAG + `legal file right:`)
 
         let newFile = String.fromCharCode(legalXRight)
         let newPos = newFile + y // lateral move 
@@ -732,7 +742,7 @@ export const calculateKingMoves = (fromSquare) => {
             newPos = newFile + legalYUp;
             moveCoords.push(newPos);
         } else {
-            console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
+            // console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
 
         }
 
@@ -740,11 +750,11 @@ export const calculateKingMoves = (fromSquare) => {
             newPos = newFile + legalYDown;
             moveCoords.push(newPos);
         } {
-            console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
+            // console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
 
         }
     } else {
-        console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
+        // console.log(TAG + `Invalid file to left of king: ${String.fromCharCode(legalXLeft)}`)
     }
 
     // Can move up
@@ -763,7 +773,7 @@ export const calculateKingMoves = (fromSquare) => {
     const squares = [];
 
     moveCoords.forEach((pos) => {
-        console.log(TAG + `King move coords: ${pos}`)
+        // console.log(TAG + `King move coords: ${pos}`)
         const sqr = gameState.get(pos);
         squares.push(sqr)
     });

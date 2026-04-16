@@ -216,42 +216,31 @@ export class Square {
 
             console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
 
-            // if (this.piece === GameStateManager.getInstance().selected) {
-            //     console.warn(this.TAG + ` this piece already equals selected piece. we should deselect it! `)
-            //     GameStateManager.getInstance().selected.onDeselected();
-            //     GameStateManager.getInstance().selected = null;
-            //     return;
+            // switch (this.piece.type.toString().toUpperCase()) {
+            //     case 'P':
+            //         // console.log(this.TAG + "Pawn clicked at: " + this.file + this.rank);
+            //         calculatePawnMoves(this);
+            //         break;
+            //     case 'B':
+            //         // console.log(this.TAG + "Bishop clicked at: " + this.file + this.rank);
+            //         calculateBishopPath(this, null);
+            //         break;
+            //     case 'N':
+            //         calculateKnightMoves(this);
+            //         break;
+            //     case 'R':
+            //         calculateRookMoves(this);
+            //         break;
+            //     case 'Q':
+            //         calculateQueenMoves(this);
+            //         break;
+            //     case 'K':
+            //         calculateKingMoves(this);
+            //         break;
+            //     // Add cases for other piece types
             // }
-
-            // GameStateManager.getInstance.selected.onDeselected() // deselect other piece, 
-
-
-
-            switch (this.piece.type.toString().toUpperCase()) {
-                case 'P':
-                    // console.log(this.TAG + "Pawn clicked at: " + this.file + this.rank);
-                    calculatePawnMoves(this);
-                    break;
-                case 'B':
-                    // console.log(this.TAG + "Bishop clicked at: " + this.file + this.rank);
-                    calculateBishopPath(this, null);
-                    break;
-                case 'N':
-                    calculateKnightMoves(this);
-                    break;
-                case 'R':
-                    calculateRookMoves(this);
-                    break;
-                case 'Q':
-                    calculateQueenMoves(this);
-                    break;
-                case 'K':
-                    calculateKingMoves(this);
-                    break;
-                // Add cases for other piece types
-            }
-
-            GameStateManager.getInstance().setSelected(this.piece)
+            GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
+            GameStateManager.getInstance().setSelected(this)
 
             //After moves are calculated, trigger onselected
 
