@@ -1,5 +1,5 @@
 import { Piece } from "./Piece.js";
-import { handlePawnMove, calculateBishopPath, calculateKnightMoves, handleKnightMove } from "./MoveHandler.js";
+import { handlePawnMove, calculateBishopPath, calculateKnightMoves, calculatePawnMoves, calculateQueenMoves, calculateRookMoves, } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
 
@@ -230,13 +230,20 @@ export class Square {
             switch (this.piece.type.toString().toUpperCase()) {
                 case 'P':
                     // console.log(this.TAG + "Pawn clicked at: " + this.file + this.rank);
+                    calculatePawnMoves(this);
                     break;
                 case 'B':
                     // console.log(this.TAG + "Bishop clicked at: " + this.file + this.rank);
                     calculateBishopPath(this, null);
                     break;
                 case 'N':
-                    calculateKnightMoves(this)
+                    calculateKnightMoves(this);
+                    break;
+                case 'R':
+                    calculateRookMoves(this);
+                    break;
+                case 'Q':
+                    calculateQueenMoves(this);
                     break;
                 // Add cases for other piece types
             }

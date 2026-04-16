@@ -21,6 +21,8 @@ export class GameStateManager {
         // Deselect on second selection. 
         if (this.#selected === piece) {
             this.#selected.onDeselected();
+            this.#selected = null;
+
             return;
         }
         this.#selected = piece

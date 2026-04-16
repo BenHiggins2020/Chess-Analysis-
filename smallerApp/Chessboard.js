@@ -82,11 +82,6 @@ export class Chessboard {
         this.gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
         GameStateManager.getInstance().deselect();
 
-        // this.gameState.get(fromSquare.position).piece = null; // Clear the piece from the original square in the game state
-        // this.gameState.get(toSquare.position).piece = piece; // Set the piece on the new square in the game state
-        // console.log(this.TAG + "Updated game state after move: ", ((fromSquare)));
-        // console.log(this.TAG + "Updated game state after move: ", this.gameState.get((fromSquare.position)));
-
     }
 
     setPieces = () => {

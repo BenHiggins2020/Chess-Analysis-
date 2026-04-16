@@ -1,5 +1,37 @@
+import { Square } from "./Square.js";
 
 const TAG = "MoveHandler: ";
+
+const validFiles = ["a", "b", "c", "d", "e", "f", "g", "h"]
+const validRanks = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
+const validatePosition = (pos) => {
+    const file = pos[0];
+    const rank = pos[1];
+    // console.log(TAG + `validating position: file = ${file} rank = ${rank}`);
+
+    if (!validFiles.includes(file)) return false;
+    if (!validRanks.includes(rank)) return false;
+    return true;
+}
+
+const validateFile = (file) => {
+    if (!(file instanceof String)) {
+        file.toString();
+    }
+
+    if (validFiles.includes(file)) return true;
+    return false;
+}
+
+const validateRank = (rank) => {
+    if (!(rank instanceof String)) {
+        rank.toString();
+    }
+
+    if (validRanks.includes(rank)) return true;
+    return false;
+}
 
 export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
 
@@ -97,6 +129,92 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
     return true; // Placeholder: allow all moves for now
 
 };
+
+export const calculatePawnMoves = (fromSquare) => {
+    const piece = fromSquare.piece;
+    const gameState = fromSquare.chessboard.gameState;
+
+    function canDoubleMove(fromSquare) {
+        const piece = fromSquare.piece;
+        if (piece.color == "white" && fromSquare.rank == 2) {
+            return true;
+        } else if (piece.color == "black" && fromSquare.rank == 7) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function canCapture(fromSquare) {
+        const file = (fromSquare.file).charCodeAt(0);
+
+        const newRank = fromSquare.rank + 1;
+        const newFileLeft = String.fromCharCode((file - 1));
+
+        const validCaptures = [];
+
+        if (validateFile(newFileLeft)) {
+            const pos = newFileLeft + newRank;
+            const targetSqr = gameState.get(pos);
+            console.log(TAG + `got valid file: checking sqr position: ${pos} `)
+            if (targetSqr.piece !== null) {
+                if (targetSqr.piece.color !== fromSquare.piece.color) {
+                    console.log(TAG + `got piece on sqr (${pos}) ${targetSqr.piece.type
+                        }`)
+                    validCaptures.push(targetSqr);
+                }
+            }
+        }
+
+        const newFileRight = String.fromCharCode((file + 1));
+        console.log(TAG + `Right capture = ${newFileRight}`)
+        if (validateFile(newFileRight)) {
+            const pos = newFileRight + newRank;
+            const targetSqr = gameState.get(pos);
+            console.log(TAG + `got valid file: checking sqr position: ${pos} `)
+
+            if (targetSqr.piece !== null) {
+                if (targetSqr.piece.color !== fromSquare.piece.color) {
+                    console.log(TAG + `got piece on sqr [right](${pos}) ${targetSqr.piece.type
+                        }`)
+                    validCaptures.push(targetSqr);
+                }
+            }
+        } else {
+            console.warn(TAG + `Right capture move is on invalide file = ${newFileRight}`)
+
+        }
+
+        return validCaptures;
+    }
+
+    let moves = []
+    let x = fromSquare.file.charCodeAt(0);
+    let y = fromSquare.rank;
+
+    if (canDoubleMove(fromSquare)) {
+        const sqr2 = String.fromCharCode(x) + (y + 2);
+        moves.push(gameState.get(sqr2));
+    }
+
+    const canCaptureOn = canCapture(fromSquare);
+    if (canCaptureOn.length > 0) {
+        moves.push(...canCaptureOn);
+    }
+
+    const sqr1 = String.fromCharCode(x) + (y + 1);
+    const oneMoveSqr = gameState.get(sqr1);
+    if (oneMoveSqr.piece === null) {
+        moves.push(oneMoveSqr);
+    }
+
+    console.log(TAG + ` pawn moves: `);
+    moves.forEach((sqr) => {
+        console.log(TAG + `sqr: ${sqr.position}`)
+    })
+
+    piece.moves = moves;
+}
 
 export const handleBishopMove = (fromSquare, toSquare) => {
     try {
@@ -280,6 +398,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     }
 
     selectedPiece.moves = squares;
+    return squares;
 }
 
 // Returns a boolean if knight move is legal. 
@@ -314,8 +433,7 @@ export const handleKnightMove = (fromSquare, toSquare) => {
 
 export const calculateKnightMoves = (fromSquare) => {
 
-    const validFiles = ["a", "b", "c", "d", "e", "f", "g", "h"]
-    const validRanks = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
     const chessboard = fromSquare.chessboard;
     const selectedPiece = fromSquare.piece;
 
@@ -403,4 +521,147 @@ export const calculateKnightMoves = (fromSquare) => {
 
     selectedPiece.moves = moves;
     return moves;
-} 
+}
+
+export const handleRookMoves = (fromSquare, toSquare) => {
+    const piece = fromSquare.piece
+    const moves = calculateRookMoves(fromSquare);
+
+    if (moves.includes(toSquare)) {
+        // console.log(TAG + `moves includes selected square`)
+        if (toSquare.piece !== null) {
+
+            if (toSquare.piece.color !== piece.color) {
+                // console.log(TAG + `selected square, has piece of different color, can move (capture)`)
+                return true;
+            } else {
+                console.log(TAG + ``)
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+
+}
+
+export const calculateRookMoves = (fromSquare) => {
+    const piece = fromSquare.piece;
+    const chessboard = fromSquare.chessboard;
+
+    //x bounds
+    let xMin = "a".charCodeAt(0) // x = 1 for file 'a'
+    let xMax = "h".charCodeAt(0) // x = 8 for file 'h'
+
+    //y bounds
+    let yMin = 1; // y = 1 for rank 1
+    let yMax = 8; // y = 8 for rank 8
+
+    let x = fromSquare.file.charCodeAt(0);
+    let y = fromSquare.rank;
+
+    const leftMoves = x - xMin; // dist to left of board
+    const rightMoves = xMax - x; // dist to right of board;
+
+    const upMoves = yMax - y; // dist to top
+    const downMoves = y - yMin; // dist to bottom 
+
+    let nxtX = x;
+    let nxtY = y;
+    const squares = []
+
+    //dist to right
+    for (let i = 0; i < rightMoves; i++) {
+        nxtX += 1
+        const file = String.fromCharCode(nxtX);
+        const pos = file + nxtY;
+        // console.log(TAG + `nxt square pos [right] = ${pos}`);
+        const sqr = chessboard.gameState.get(pos);
+        squares.push(sqr);
+        if (sqr.piece !== null) break; // break once we hit a piece
+    }
+
+    nxtX = x;
+    nxtY = y;
+    //dist to left
+    for (let i = 0; i < leftMoves; i--) {
+        nxtX -= 1
+        const file = String.fromCharCode(nxtX);
+        const pos = file + nxtY;
+        // console.log(TAG + `nxt square pos [left] = ${pos}`);
+        const sqr = chessboard.gameState.get(pos);
+        // if( !(sqr instanceof Square) ){
+        //     console.error(TAG+ `error: sqr object is not an instance of Square`)
+        // }
+        squares.push(sqr);
+        if (sqr.piece !== undefined || sqr.piece !== null) break;
+
+    }
+
+    nxtX = x;
+    nxtY = y;
+    for (let i = 0; i < downMoves; i++) {
+        nxtY -= 1;
+        const file = String.fromCharCode(nxtX);
+        const pos = file + nxtY;
+        // console.log(TAG + `nxt square pos [down] = ${pos}`);
+        const sqr = chessboard.gameState.get(pos);
+        squares.push(sqr);
+        if (sqr.piece !== null) break;
+
+    }
+
+    nxtX = x;
+    nxtY = y;
+    for (let i = 0; i < upMoves; i++) {
+        nxtY += 1;
+        const file = String.fromCharCode(nxtX);
+        const pos = file + nxtY;
+        // console.log(TAG + `nxt square pos [up]= ${pos}`);
+        const sqr = chessboard.gameState.get(pos);
+        squares.push(sqr);
+        if (sqr.piece !== null) break;
+    }
+
+    squares.forEach((square) => {
+        // console.log(`Squares for rook: ${square.position}`);
+    })
+    piece.moves = squares
+    return squares
+
+}
+
+export const handleQueenMoves = (fromSquare, toSquare) => {
+
+    if (toSquare.piece !== null) {
+        if (toSquare.piece.color === fromSquare.piece.color) return false;
+    }
+    const canMoveDiagonal = handleBishopMove(fromSquare, toSquare);
+    const canMoveStraight = handleRookMoves(fromSquare, toSquare);
+    console.log(TAG + `Can move diagonal ${canMoveDiagonal} straight: ${canMoveStraight}`)
+    return canMoveDiagonal || canMoveStraight;
+}
+
+export const calculateQueenMoves = (fromSquare) => {
+    const piece = fromSquare.piece;
+    const diagonalMoves = calculateBishopPath(fromSquare);
+    const rookMoves = calculateRookMoves(fromSquare);
+    const moves = []
+    moves.push(...diagonalMoves);
+    moves.push(...rookMoves);
+    piece.moves = moves;
+
+    // diagonalMoves.forEach((square) => {
+    //     console.log(TAG + `diagonalMoves Moves: ${square.position}`);
+    // })
+    // rookMoves.forEach((square) => {
+    //     console.log(TAG + `Rook Moves: ${square.position}`);
+    // })
+    // piece.moves.forEach((square) => {
+    // console.log(TAG + `Squares: ${square.position}`);
+    // })
+
+    // console.log(TAG + `Queen move count: ${diagonalMoves.length} +  ${rookMoves.length} = ${moves.length}`);
+
+
+}

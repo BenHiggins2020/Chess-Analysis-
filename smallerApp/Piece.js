@@ -1,5 +1,5 @@
 import { Square } from "./Square.js";
-import { handlePawnMove, handleBishopMove, handleKnightMove } from "./MoveHandler.js";
+import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 
 
@@ -50,9 +50,9 @@ export class Piece {
     }
 
     onSelected() {
-        console.log(`${this.TAG} onSelected(), moves = ${this.moves.length}`);
+        // console.log(`${this.TAG} onSelected(), moves = ${this.moves.length}`);
         this.moves.forEach((square) => {
-            console.log(this.TAG + `square is square? = ${(square instanceof Square)}`)
+            // console.log(this.TAG + `square is square? = ${(square instanceof Square)}`)
 
             // console.log(this.TAG + `showing move dot for square: ${square.position}`)
             square.showMove();
@@ -62,7 +62,6 @@ export class Piece {
     onDeselected() {
         // console.log(`${this.TAG} onDeselected() `)
         this.moves.forEach((square) => {
-            console.log(this.TAG + `square is square? = ${(square instanceof Square)}`)
             square.hideMove();
         })
     }
@@ -80,8 +79,14 @@ export class Piece {
                 return handleBishopMove(fromSquare, toSquare);
             case 'N':
             case 'n':
-
                 return handleKnightMove(fromSquare, toSquare);
+            case 'R':
+            case 'r':
+                return handleRookMoves(fromSquare, toSquare);
+            case 'Q':
+            case 'q':
+                return handleQueenMoves(fromSquare, toSquare);
+
             // Add cases for move piece types
         }
 
@@ -94,7 +99,7 @@ export class Piece {
 
         this.UI_ref.addEventListener('dragstart', (e) => {
             // This makes the piece "stick" to the cursor
-            console.log(this.TAG + "Drag start event triggered on piece: " + this.file + this.rank);
+            // console.log(this.TAG + "Drag start event triggered on piece: " + this.file + this.rank);
             e.dataTransfer.setData('text/plain', this.file + this.rank);
 
             // Optional: Customizing the drag ghost
@@ -105,8 +110,8 @@ export class Piece {
         });
 
         this.UI_ref.addEventListener('dragend', (e) => {
-            console.log(this.TAG + "Drag end event triggered on piece: " + this.file + this.rank);
-            console.log(this.TAG + "Drag end event: ", e);
+            // console.log(this.TAG + "Drag end event triggered on piece: " + this.file + this.rank);
+            // console.log(this.TAG + "Drag end event: ", e);
             // this.UI_ref.style.opacity = "1";
         });
     }
