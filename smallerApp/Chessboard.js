@@ -6,6 +6,7 @@
 import { GameStateManager } from "./GameStateManage.js";
 import { tryMoveUci, syncBoardTo } from "./chessEngine.js";
 import { Square } from "./Square.js";
+import { scheduleComputerMove } from "./autoPlay.js";
 
 export class Chessboard {
 
@@ -78,6 +79,7 @@ export class Chessboard {
                 detail: { message: "", kind: "clear" },
             }),
         );
+        scheduleComputerMove(this);
         return true;
     };
 }

@@ -49,6 +49,29 @@
                     <label><input type="checkbox" id="strict-opening"> Strict opening line (reject other legal moves; auto-reply from line)</label>
                 </div>
 
+                <div class="autoplay-controls">
+                    <label><input type="checkbox" id="auto-play"> Auto-play vs computer (Stockfish)</label>
+                    <label class="autoplay-depth-label">Strength (depth)
+                        <select id="auto-play-depth">
+                            <option value="5">5 — Fast</option>
+                            <option value="8">8 — Easy</option>
+                            <option value="12" selected>12 — Medium</option>
+                            <option value="16">16 — Strong</option>
+                            <option value="20">20 — Maximum</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="opening-controls">
+                    <label class="opening-label">My opening
+                        <select id="opening-mine"><option value="">— None —</option></select>
+                    </label>
+                    <label class="opening-label">Computer opening
+                        <select id="opening-computer"><option value="">— None —</option></select>
+                    </label>
+                    <button id="apply-openings-btn" type="button" class="pgn-load-button">Apply openings</button>
+                </div>
+
                 <div class="trainer-actions">
                     <button id="undo-btn" type="button">Undo</button>
                     <button id="reset-btn" type="button">New game</button>

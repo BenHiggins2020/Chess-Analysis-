@@ -15,6 +15,8 @@ import {
 } from "./chessEngine.js";
 import { mountAnalysisPanel } from "./analysis.js";
 import { mountOllamaChat } from "./ollamaChat.js";
+import { setAutoPlay, setAutoPlayDepth } from "./autoPlay.js";
+import { OPENINGS } from "./openingsDb.js";
 
 const boardEl = document.getElementById("board");
 const boardWrap = document.getElementById("board-wrap");
@@ -63,7 +65,7 @@ game.gameState.forEach((square) => {
     boardEl.appendChild(square.UI_ref);
 });
 
-mountAnalysisPanel(document.getElementById("analysis"));
+mountAnalysisPanel(document.getElementById("analysis"), game);
 mountOllamaChat(document.getElementById("ollama-root"));
 
 updateBoardFlip();
@@ -101,8 +103,7 @@ document.getElementById("load-pgn-btn")?.addEventListener("click", () => {
     }
     syncBoardTo(game);
     showStatus(
-        `Trainer PGN loaded (${r.moveCount} half-moves). ${
-            getChess().inCheck() ? "Check." : ""
+        `Trainer PGN loaded (${r.moveCount} half-moves). ${getChess().inCheck() ? "Check." : ""
         }`,
         "info",
     );
@@ -156,4 +157,67 @@ document.getElementById("reset-btn")?.addEventListener("click", () => {
             "info",
         );
     });
+});
+
+/* ── Auto-play controls ─────────────────────────────────── */
+document.getElementById("auto-play")?.addEventListener("change", (e) => {
+    setAutoPlay(e.target.checked);
+    showStatus(e.target.checked ? "Auto-play ON — computer will reply." : "Auto-play OFF.", "info");
+});
+
+document.getElementById("auto-play-depth")?.addEventListener("change", (e) => {
+    setAutoPlayDepth(Number(e.target.value));
+    showStatus(`Computer depth set to ${e.target.value}.`, "info");
+});
+
+/* ── Opening database ───────────────────────────────────── */
+function populateOpeningSelect(selectEl, colorFilter) {
+    if (!selectEl) return;
+    OPENINGS.forEach((o, i) => {
+        if (colorFilter && o.color !== colorFilter && o.color !== "both") return;
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `${o.eco} — ${o.name}`;
+        selectEl.appendChild(opt);
+    });
+}
+
+const openingMineEl = document.getElementById("opening-mine");
+const openingCompEl = document.getElementById("opening-computer");
+
+// Populate with all openings (user can pick any side's opening for either slot)
+populateOpeningSelect(openingMineEl, null);
+populateOpeningSelect(openingCompEl, null);
+
+document.getElementById("apply-openings-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+
+    const mineIdx = openingMineEl?.value;
+    const compIdx = openingCompEl?.value;
+
+    // Load player opening as trainer PGN
+    if (mineIdx !== "" && mineIdx != null) {
+        const o = OPENINGS[Number(mineIdx)];
+        if (pgnInput) pgnInput.value = o.pgn;
+        const r = loadPgnOpening(o.pgn);
+        if (r.ok) {
+            showStatus(`Loaded ${o.name} as your opening (${r.moveCount} half-moves).`, "info");
+        } else {
+            showStatus(r.error, "error");
+        }
+    }
+
+    // Load computer opening PGN
+    if (compIdx !== "" && compIdx != null) {
+        const o = OPENINGS[Number(compIdx)];
+        if (computerPgnInput) computerPgnInput.value = o.pgn;
+        const r = loadComputerOpeningPgn(o.pgn);
+        if (r.ok) {
+            showStatus(`Loaded ${o.name} as computer opening (${r.moveCount} half-moves).`, "info");
+        } else {
+            showStatus(r.error, "error");
+        }
+    }
+
+    syncBoardTo(game);
 });
