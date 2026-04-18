@@ -1,0 +1,12 @@
+{
+  "name": "smaller-app-chess",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes serve . -p 5173"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "stockfish": "^17.1.0"
+  }
+}
