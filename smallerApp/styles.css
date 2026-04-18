@@ -18,10 +18,32 @@
     .container { 
         display: flex;
         flex-direction: row;
+        align-items: flex-start;
         gap: 20px;
         padding: 20px;
-        /* background-color: #87B6BC ; */
         height: 100%;
+    }
+
+    .board-wrap {
+        display: inline-block;
+        transform-origin: center center;
+    }
+    .board-wrap.board-wrap--flipped {
+        transform: rotate(180deg);
+    }
+    .board-wrap.board-wrap--flipped .piece:not(.dragging-now):not(.draggin-now) {
+        transform: rotate(180deg);
+    }
+
+    .square--hint {
+        box-shadow: inset 0 0 0 3px rgba(0, 100, 200, 0.55);
+    }
+    .square--selected {
+        box-shadow: inset 0 0 0 3px rgba(180, 60, 0, 0.75);
+    }
+    .square:hover {
+        outline: 2px solid rgba(60, 60, 100, 0.35);
+        outline-offset: -2px;
     }
     .column {
         justify-items: center;
@@ -31,9 +53,105 @@
         flex: 1;
         /* background-color: #F6F09F; */
     }
-    .column-right {
+
+    .chess-status {
+        min-height: 1.25em;
+        margin: 8px 0;
+        color: #333;
+    }
+    .chess-status.error {
+        color: #a40000;
+        font-weight: 600;
+    }
+
+    .trainer-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 16px;
+        max-width: 42rem;
+    }
+    .trainer-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+    }
+    .column-middle {
         flex: 1;
-        /* background-color: #BED4CB; */
+        min-width: 0;
+    }
+
+    .column-chat {
+        width: 300px;
+        flex-shrink: 0;
+        max-height: calc(100vh - 40px);
+        position: sticky;
+        top: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
+        background: #fafafa;
+    }
+
+    .trainer-hint {
+        font-size: 0.85rem;
+        color: #555;
+        margin: 0;
+    }
+
+    .chat-title {
+        margin: 0 0 8px 0;
+        font-size: 1rem;
+    }
+    .chat-label {
+        display: block;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+    .chat-input {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 4px;
+    }
+    .chat-log {
+        height: 220px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 8px;
+        margin: 10px 0;
+        background: #fff;
+        font-size: 0.88rem;
+    }
+    .chat-bubble {
+        margin-bottom: 8px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .chat-bubble--user {
+        background: #e3f2fd;
+    }
+    .chat-bubble--assistant {
+        background: #f1f8e9;
+    }
+    .chat-bubble--error {
+        background: #ffebee;
+        color: #a40000;
+    }
+    .chat-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        resize: vertical;
+    }
+    .chat-send {
+        margin-top: 6px;
+    }
+    .chat-hint {
+        font-size: 0.75rem;
+        color: #666;
+        margin: 0;
     }
 
   
@@ -68,11 +186,10 @@
         background-color: #BED4CB;
      }
 
+     .dragging-now,
      .draggin-now {
-        position: fixed; 
         pointer-events: none;
-        z-index: 1000;
-        transform: translate(-50%,-50%)
+        z-index: 10000;
      }
      
     .dark-square { 
@@ -97,7 +214,7 @@
      }
 
      .piece-white {
-        color:white
+        color: white;
         }
 
     .piece-black {
@@ -120,4 +237,35 @@
         border-radius: 8px;
         border-width: 2px;
         border-color: #B35656;
+    }
+
+    .analysis-section {
+        margin-top: 1.25rem;
+    }
+    .analysis-heading {
+        font-size: 1rem;
+        margin: 0 0 0.35rem 0;
+    }
+    .analysis-muted {
+        color: #555;
+        font-size: 0.9rem;
+    }
+    .analysis-error {
+        color: #a40000;
+        font-size: 0.9rem;
+    }
+    .analysis-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .analysis-table th,
+    .analysis-table td {
+        border: 1px solid #ccc;
+        padding: 4px 6px;
+        text-align: left;
+    }
+    .analysis-pv {
+        word-break: break-word;
+        font-size: 0.85rem;
     }

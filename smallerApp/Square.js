@@ -1,6 +1,4 @@
 import { Piece } from "./Piece.js";
-import { handlePawnMove, calculateBishopPath, calculateKnightMoves, calculatePawnMoves, calculateKingMoves, calculateQueenMoves, calculateRookMoves, } from "./MoveHandler.js";
-import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
 
 /**
@@ -83,18 +81,7 @@ export class Square {
     }
 
     setupUI() {
-        this.enabled_state = this.UI_ref.style
-
-        this.UI_ref.addEventListener('mouseover', () => {
-            this.UI_ref.style.opacity = '0.5';
-            this.UI_ref.style.transition = 'background-color 0.3s, opacity 0.3s';
-        });
-
-        this.UI_ref.addEventListener('mouseout', () => {
-            this.UI_ref.style.backgroundColor = '';
-            this.UI_ref.style.opacity = '1';
-
-        });
+        this.enabled_state = this.UI_ref.style;
     }
 
     setPiece(piece) {
@@ -141,105 +128,102 @@ export class Square {
         let selectedPiece = null; // used for dragging 
         //going to use gamestatemanager for this 
 
-        piece.addEventListener('mousedown', (e) => {
-            // console.log(this.TAG + "Mouse-down event: ", e);
+        piece.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
 
-            // 1. Make piece ignore mouse so we can detect the square underneath
             selectedPiece = piece;
-            selectedPiece.style.pointerEvents = 'none';
-            selectedPiece.style.position = 'fixed';
-            selectedPiece.style.zIndex = '1000';
-            selectedPiece.classList.add('dragging-now');
+            selectedPiece.style.pointerEvents = "none";
+            selectedPiece.classList.add("dragging-now", "draggin-now");
 
-            // Capture initial offset so piece doesn't "jump" center
             const shiftX = selectedPiece.offsetWidth / 2;
             const shiftY = selectedPiece.offsetHeight / 2;
 
+            const parentSquare = this.UI_ref;
+            document.body.appendChild(selectedPiece);
+            selectedPiece.style.position = "fixed";
+            selectedPiece.style.zIndex = "10000";
+            selectedPiece.style.left = `${e.clientX - shiftX}px`;
+            selectedPiece.style.top = `${e.clientY - shiftY}px`;
+
             const moveAt = (clientX, clientY) => {
-                selectedPiece.style.left = clientX - shiftX + 'px';
-                selectedPiece.style.top = clientY - shiftY + 'px';
+                selectedPiece.style.left = `${clientX - shiftX}px`;
+                selectedPiece.style.top = `${clientY - shiftY}px`;
             };
 
-            // Move it immediately to current cursor
             moveAt(e.clientX, e.clientY);
 
             function onMouseMove(event) {
                 moveAt(event.clientX, event.clientY);
             }
 
-            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener("mousemove", onMouseMove);
 
-            // Use document for mouseup so it triggers even if we release 
-            // the mouse slightly outside the piece boundaries
             document.onmouseup = (event) => {
-                // console.log(this.TAG + "Mouse-up event: ", event);
-                // console.log(this.TAG + "Selected piece: ", selectedPiece);
+                document.removeEventListener("mousemove", onMouseMove);
 
-                document.removeEventListener('mousemove', onMouseMove);
+                selectedPiece.classList.remove("dragging-now", "draggin-now");
+                selectedPiece.style.pointerEvents = "auto";
+                selectedPiece.style.zIndex = "";
+                selectedPiece.style.position = "";
 
-                // 2. IMPORTANT: Re-enable pointer events so it can be grabbed again
-                selectedPiece.style.pointerEvents = 'auto';
-                selectedPiece.style.position = '';
-                selectedPiece.style.zIndex = '';
-                selectedPiece.classList.remove('dragging-now');
+                const elementBelow = document.elementFromPoint(
+                    event.clientX,
+                    event.clientY,
+                );
+                const targetSquare = elementBelow?.closest(".square");
 
-                // 3. Find what is underneath the cursor
-                const elementBelow = document.elementFromPoint(event.clientX, event.clientY);
-                const square = elementBelow?.closest('.light-square, .dark-square');
+                const fromCoord = String(this.file) + String(this.rank);
 
-                if (square && selectedPiece != null) {
-                    // console.log("Dropped on:", square.dataset.file, square.dataset.rank);
-
-                    const fromCoord = this.file + this.rank;
-                    const toCoord = square.dataset.file + square.dataset.rank;
-
-                    this.chessboard.handleMove(fromCoord, toCoord);
+                if (targetSquare?.dataset?.file && selectedPiece != null) {
+                    const toCoord =
+                        targetSquare.dataset.file + targetSquare.dataset.rank;
+                    if (fromCoord !== toCoord) {
+                        const movedOk = this.chessboard.handleMove(
+                            fromCoord,
+                            toCoord,
+                        );
+                        if (!movedOk) {
+                            parentSquare.appendChild(selectedPiece);
+                        } else {
+                            selectedPiece.remove();
+                        }
+                    } else {
+                        parentSquare.appendChild(selectedPiece);
+                    }
                 } else {
-                    // Snap back if dropped in the void
-                    selectedPiece.style.left = '';
-                    selectedPiece.style.top = '';
+                    parentSquare.appendChild(selectedPiece);
                 }
-                selectedPiece = null;
 
+                selectedPiece.style.left = "";
+                selectedPiece.style.top = "";
+                selectedPiece = null;
                 document.onmouseup = null;
             };
         });
 
         piece.ondragstart = () => false;
 
-        this.UI_ref.addEventListener('click', () => {
-
-            if (this.piece === null || this.piece === "empty") return
-
-            console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
-            GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
-            GameStateManager.getInstance().setSelected(this)
+        this.UI_ref.addEventListener("click", () => {
+            if (this.piece === null || this.piece === "empty") return;
+            GameStateManager.getInstance().setSelected(this);
         });
     }
 
     render() {
         this.UI_ref.innerHTML = '';
-        this.hideMove()
+        this.hideMove();
         if (this.piece !== 'empty' && this.piece !== null) {
-            if (this.UI_ref.childElementCount > 0) {
-                // console.log(this.TAG + `1 or more elements found. removing. `);
-                this.UI_ref.removeChild();
-            }
-            this.UI_ref.appendChild = (this.piece.UI_ref);
+            this.UI_ref.appendChild(this.piece.UI_ref);
         }
     }
 
     showMove = () => {
-        this.UI_ref.style.opacity = "0.5"
-        if (this.piece === null || this.piece === "empty") {
-        }
-    }
+        this.UI_ref.classList.add("square--hint");
+    };
 
     hideMove = () => {
-        this.UI_ref.style.opacity = "1"
-        this.UI_ref.backgroundColor = 'transparent'
-        if (this.piece === null || this.piece === "empty") {
-        }
-    }
+        this.UI_ref.classList.remove("square--hint");
+    };
 
 }

@@ -1,18 +1,159 @@
 import { Chessboard } from "./Chessboard.js";
-import { Square } from "./Square.js";
-import { Piece } from "./Piece.js";
-import { GameStateManager } from "./GameStateManage.js"
-console.log("Script")
-const board = document.getElementById("board");
-const gameState = new GameStateManager();
+import { GameStateManager } from "./GameStateManage.js";
+import {
+    resetEngine,
+    syncBoardTo,
+    loadFen,
+    loadPgnOpening,
+    loadComputerOpeningPgn,
+    clearComputerOpening,
+    undoLast,
+    setLearnerColor,
+    setStrictOpening,
+    getChess,
+    getFen,
+} from "./chessEngine.js";
+import { mountAnalysisPanel } from "./analysis.js";
+import { mountOllamaChat } from "./ollamaChat.js";
+
+const boardEl = document.getElementById("board");
+const boardWrap = document.getElementById("board-wrap");
+const statusEl = document.getElementById("chess-status");
+const fenInput = document.getElementById("fen");
+const pgnInput = document.getElementById("pgn");
+const computerPgnInput = document.getElementById("computer-pgn");
+
+function showStatus(message, kind = "info") {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.remove("error");
+    if (kind === "error") {
+        statusEl.classList.add("error");
+    }
+}
+
+document.addEventListener("chessStatus", (e) => {
+    const { message, kind } = e.detail;
+    if (kind === "clear") {
+        showStatus("", "info");
+    } else {
+        showStatus(message, kind);
+    }
+});
+
+function readTrainerOptions() {
+    const b = document.getElementById("learner-black");
+    setLearnerColor(b?.checked ? "b" : "w");
+    const strict = document.getElementById("strict-opening");
+    setStrictOpening(strict?.checked ?? false);
+}
+
+function updateBoardFlip() {
+    const black = document.getElementById("learner-black")?.checked;
+    boardWrap?.classList.toggle("board-wrap--flipped", !!black);
+}
+
+new GameStateManager();
 const game = new Chessboard();
 
+resetEngine();
+syncBoardTo(game);
 
-game.gameState.forEach((square, coord) => {
+game.gameState.forEach((square) => {
+    boardEl.appendChild(square.UI_ref);
+});
 
-    board.appendChild(square.UI_ref);
+mountAnalysisPanel(document.getElementById("analysis"));
+mountOllamaChat(document.getElementById("ollama-root"));
 
-})
+updateBoardFlip();
+document.dispatchEvent(
+    new CustomEvent("chessPositionChanged", { detail: { fen: getFen() } }),
+);
 
+document.getElementById("load-fen-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    const fen = fenInput?.value?.trim();
+    if (!fen) {
+        showStatus("Paste a FEN string.", "error");
+        return;
+    }
+    const r = loadFen(fen);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
+    }
+    syncBoardTo(game);
+    showStatus("FEN loaded.", "info");
+});
 
-const pgn = document.getElementById("pgn");
+document.getElementById("load-pgn-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    const pgn = pgnInput?.value?.trim();
+    if (!pgn) {
+        showStatus("Paste a PGN first.", "error");
+        return;
+    }
+    const r = loadPgnOpening(pgn);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
+    }
+    syncBoardTo(game);
+    showStatus(
+        `Trainer PGN loaded (${r.moveCount} half-moves). ${
+            getChess().inCheck() ? "Check." : ""
+        }`,
+        "info",
+    );
+});
+
+document.getElementById("load-computer-pgn-btn")?.addEventListener("click", () => {
+    const pgn = computerPgnInput?.value?.trim();
+    if (!pgn) {
+        showStatus("Paste a computer-opening PGN.", "error");
+        return;
+    }
+    const r = loadComputerOpeningPgn(pgn);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
+    }
+    showStatus(`Computer opening loaded (${r.moveCount} half-moves).`, "info");
+});
+
+document.getElementById("clear-computer-pgn-btn")?.addEventListener("click", () => {
+    clearComputerOpening();
+    if (computerPgnInput) computerPgnInput.value = "";
+    showStatus("Computer opening cleared.", "info");
+});
+
+document.getElementById("undo-btn")?.addEventListener("click", () => {
+    const r = undoLast();
+    if (!r.ok) {
+        showStatus("Nothing to undo.", "error");
+        return;
+    }
+    syncBoardTo(game);
+    showStatus("Undid one move.", "info");
+});
+
+document.getElementById("reset-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    resetEngine();
+    syncBoardTo(game);
+    showStatus("New game.", "info");
+});
+
+["learner-white", "learner-black", "strict-opening"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        readTrainerOptions();
+        if (id === "learner-white" || id === "learner-black") {
+            updateBoardFlip();
+        }
+        showStatus(
+            "Trainer options updated. Reload trainer PGN if the auto-prefix should change.",
+            "info",
+        );
+    });
+});
