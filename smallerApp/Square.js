@@ -4,7 +4,10 @@ import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
 
 /**
- * Square class represents each square on the chessboard, holding information about its file, rank, piece, and color.
+ * Square class represents each square on the chessboard, 
+ * holding information about its file, rank, piece, and color.
+ * Manages the UI for each square, including piece placement and move highlighting.
+ * Also handles user interactions like clicking and dragging pieces.
  */
 export class Square {
     constructor(file, rank, chessboard) {
@@ -95,7 +98,7 @@ export class Square {
     }
 
     setPiece(piece) {
-        console.warn(this.TAG + ` setPiece: ${piece.type} to square: ${this.position}`)
+        // console.warn(this.TAG + ` setPiece: ${piece.type} to square: ${this.position}`)
 
         if (piece === null || piece === 'empty' || !(piece instanceof Piece)) {
             console.warn(this.TAG + `trying to set null piece. returning. `)
@@ -103,7 +106,7 @@ export class Square {
         }
 
         if (this.piece !== null) {
-            console.warn(this.TAG + ` other piece already exists on square. ${this.piece.type} updateing to -> ${piece.type}`);
+            // console.warn(this.TAG + ` other piece already exists on square. ${this.piece.type} updateing to -> ${piece.type}`);
         }
 
         this.piece = piece;
@@ -115,26 +118,22 @@ export class Square {
     }
 
     removePiece() {
-        console.warn(this.TAG + `Removing piece (${this.piece.type}) from ${this.file}${this.rank}`);
+        // console.warn(this.TAG + `Removing piece (${this.piece.type}) from ${this.file}${this.rank}`);
 
         if (this.piece === null || this.piece === 'empty') {
-            console.warn(this.TAG + `No piece to remove from ${this.file}${this.rank}`);
+            // console.warn(this.TAG + `No piece to remove from ${this.file}${this.rank}`);
             return;
         };
 
         if (this.UI_ref.childElementCount > 0) { // removes child. 
             this.UI_ref.removeChild(this.piece.UI_ref);
         } else {
-            console.log(this.TAG + `removing piece... but Child count is 0... `);
+            // console.log(this.TAG + `removing piece... but Child count is 0... `);
         }
 
         if (this.piece !== null) {
             this.piece = null
         }
-
-
-        console.log(this.TAG + `Piece removed from ${this.position}. Current child count: ${this.UI_ref.childElementCount}`);
-        console.log(this.TAG + `Removed Piece: `, this)
     }
 
     setupPieceUI = () => {
@@ -210,40 +209,11 @@ export class Square {
 
         this.UI_ref.addEventListener('click', () => {
 
-
             if (this.piece === null || this.piece === "empty") return
 
-
             console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
-
-            // switch (this.piece.type.toString().toUpperCase()) {
-            //     case 'P':
-            //         // console.log(this.TAG + "Pawn clicked at: " + this.file + this.rank);
-            //         calculatePawnMoves(this);
-            //         break;
-            //     case 'B':
-            //         // console.log(this.TAG + "Bishop clicked at: " + this.file + this.rank);
-            //         calculateBishopPath(this, null);
-            //         break;
-            //     case 'N':
-            //         calculateKnightMoves(this);
-            //         break;
-            //     case 'R':
-            //         calculateRookMoves(this);
-            //         break;
-            //     case 'Q':
-            //         calculateQueenMoves(this);
-            //         break;
-            //     case 'K':
-            //         calculateKingMoves(this);
-            //         break;
-            //     // Add cases for other piece types
-            // }
             GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
             GameStateManager.getInstance().setSelected(this)
-
-            //After moves are calculated, trigger onselected
-
         });
     }
 
@@ -252,7 +222,7 @@ export class Square {
         this.hideMove()
         if (this.piece !== 'empty' && this.piece !== null) {
             if (this.UI_ref.childElementCount > 0) {
-                console.log(this.TAG + `1 or more elements found. removing. `);
+                // console.log(this.TAG + `1 or more elements found. removing. `);
                 this.UI_ref.removeChild();
             }
             this.UI_ref.appendChild = (this.piece.UI_ref);

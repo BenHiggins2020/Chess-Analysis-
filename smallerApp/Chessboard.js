@@ -55,19 +55,13 @@ export class Chessboard {
 
         const piece = fromSquare.piece;
 
-        try {
 
-            if (piece.canMoveTo(fromSquare, toSquare, this)) {
-                // Move the piece
-                console.log(this.TAG + `can move, setting and removing... `);
-            } else {
-                console.error(this.TAG + `Invalid move for piece ${piece.type} from ${fromCoord} to ${toCoord}`);
-                return; // Do nothing if the move is invalid
-            }
+        if (piece.canMoveTo(fromSquare, toSquare, this)) {
+            // Move the piece (continue)
+        } else {
+            return; // Do nothing if the move is invalid
         }
-        catch (error) {
-            console.error(this.TAG + `Error during move: ${error}`);
-        }
+
 
         fromSquare.render();
         toSquare.render();

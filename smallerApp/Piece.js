@@ -1,6 +1,7 @@
 import { Square } from "./Square.js";
 import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves, handleKingMoves } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
+import { GameStateManager } from "./GameStateManage.js";
 
 
 
@@ -10,12 +11,14 @@ const GLYPHS = {
 };
 /**
  * Generates a piece based on the letter set in the Glyph object. 
+ * handle move calculation for each piece type. 
  */
 export class Piece {
     constructor(type, chessboard) {
         this.TAG = "Piece: "
         this.type = type; // 'K', 'Q', 'R', 'B', 'N', 'P'
-
+        this.isPinned = false;
+        this.isPinning = false;
         this.chessboard
         if (!GLYPHS[type]) {
             console.error(`Invalid piece type: ${type}`);
@@ -69,6 +72,20 @@ export class Piece {
     canMoveTo = (fromSquare, toSquare, chessboard) => {
         // Implement basic move validation logic here based on piece type and chess rules.
         // This is a complex topic, so you might want to start with simple rules and expand later.
+
+        // Does move check YOUR king?
+        // Option 1. if this move is done, will your king be in check? 
+        // remove piece from square, then check all the opposite team piece,
+        // to see if your king's position is within their moves..
+
+        // Option 2: Check for Pin?? 
+        // When doing a move, by opposite team, if king and other piece are within the move,
+        // set piece parameter to pinned and pinning, reset both on move, while pinning piece is there??? 
+
+
+        // Check Threats:  
+        //will this move threaten the opposite king?
+        GameStateManager.getInstance().checkForThreats(fromSquare);
 
         switch (this.type.toString()) {
             case 'P':

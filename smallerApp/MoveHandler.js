@@ -17,7 +17,7 @@ const validatePosition = (pos) => {
 
 const validateFile = (file) => {
     if (!(file instanceof String) || !(file instanceof Char)) {
-        console.log(TAG + ` File is not in file format, attempt to convert: ${file} to ${String.fromCharCode(file)}`);
+        // console.log(TAG + ` File is not in file format, attempt to convert: ${file} to ${String.fromCharCode(file)}`);
 
         // return validateFile(String.fromCharCode(file))
     }
@@ -42,14 +42,16 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
     const isForwardMove = (piece.color === 'white' && toSquare.rank > fromSquare.rank) || (piece.color === 'black' && toSquare.rank < fromSquare.rank);
 
     if (!isForwardMove) {
-        console.error(TAG + "Invalid move: Pawns can only move forward." + ` toSquare.rank > fromSquare.rank: ${piece.color} ${toSquare.rank > fromSquare.rank} for white, toSquare.rank < fromSquare.rank: ${toSquare.rank < fromSquare.rank} for black`);
+        // console.error(TAG + "Invalid move: Pawns can only move forward." + ` toSquare.rank > fromSquare.rank: ${piece.color} ${toSquare.rank > fromSquare.rank} for white, toSquare.rank < fromSquare.rank: ${toSquare.rank < fromSquare.rank} for black`);
         return false;
     }
 
     const isFirstMove = (piece.color === 'white' && fromSquare.rank === 2) || (piece.color === 'black' && fromSquare.rank === 7);
-    console.log(TAG + `isFirstMove: ${isFirstMove}, piece color = ${piece.color} \n
-        white: fromSquare.rank === 2: (${(piece.color === 'white' && fromSquare.rank === 2)}) \n
-     black: fromSquare.rank === 7: (${(piece.color === 'black' && fromSquare.rank === 7)})) | ${fromSquare.rank}`);
+    // console.log(
+    //     TAG + `isFirstMove: ${isFirstMove}, piece color = ${piece.color} \n
+    //     white: fromSquare.rank === 2: (${(piece.color === 'white' && fromSquare.rank === 2)}) \n
+    //  black: fromSquare.rank === 7: (${(piece.color === 'black' && fromSquare.rank === 7)})) | ${fromSquare.rank}`);
+
     const isToSquareEmpty = toSquare.piece === 'empty' || toSquare.piece === null;
 
     if (isStraightMove) {
@@ -109,7 +111,7 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
     const isCaptureMove = isDiagonalMove && toSquare.piece !== 'empty' && toSquare.piece !== null && toSquare.piece.color != this.color;
 
     if (isCaptureMove) {
-        console.log(TAG + "Pawn can capture on " + toSquare.file + toSquare.rank);
+        // console.log(TAG + "Pawn can capture on " + toSquare.file + toSquare.rank);
         return true;
     }
 
@@ -120,11 +122,11 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
         && chessboard.gameState.get(fromSquare.file + (fromSquare.rank + (piece.color === 'white' ? 1 : -1))).piece === 'empty'; // is the square in front of the pawn empty?
 
     if (isOneSquareForward) {
-        console.log(TAG + "Pawn can move one square forward to " + toSquare.file + toSquare.rank);
+        // console.log(TAG + "Pawn can move one square forward to " + toSquare.file + toSquare.rank);
         return true;
     }
     if (isTwoSquaresForward) {
-        console.log(TAG + "Pawn can move two squares forward to " + toSquare.file + toSquare.rank);
+        // console.log(TAG + "Pawn can move two squares forward to " + toSquare.file + toSquare.rank);
         return true;
     }
 
@@ -158,27 +160,26 @@ export const calculatePawnMoves = (fromSquare) => {
         if (validateFile(newFileLeft)) {
             const pos = newFileLeft + newRank;
             const targetSqr = gameState.get(pos);
-            console.log(TAG + `got valid file: checking sqr position: ${pos} `)
+            // console.log(TAG + `got valid file: checking sqr position: ${pos} `)
             if (targetSqr.piece !== null) {
                 if (targetSqr.piece.color !== fromSquare.piece.color) {
-                    console.log(TAG + `got piece on sqr (${pos}) ${targetSqr.piece.type
-                        }`)
+                    // console.log(TAG + `got piece on sqr (${pos}) ${targetSqr.piece.type
+                    // }`)
                     validCaptures.push(targetSqr);
                 }
             }
         }
 
         const newFileRight = String.fromCharCode((file + 1));
-        console.log(TAG + `Right capture = ${newFileRight}`)
+        // console.log(TAG + `Right capture = ${newFileRight}`)
         if (validateFile(newFileRight)) {
             const pos = newFileRight + newRank;
             const targetSqr = gameState.get(pos);
-            console.log(TAG + `got valid file: checking sqr position: ${pos} `)
+            // console.log(TAG + `got valid file: checking sqr position: ${pos} `)
 
             if (targetSqr.piece !== null) {
                 if (targetSqr.piece.color !== fromSquare.piece.color) {
-                    console.log(TAG + `got piece on sqr [right](${pos}) ${targetSqr.piece.type
-                        }`)
+                    // console.log(TAG + `got piece on sqr [right](${pos}) ${targetSqr.piece.type }`)
                     validCaptures.push(targetSqr);
                 }
             }
@@ -210,12 +211,13 @@ export const calculatePawnMoves = (fromSquare) => {
         moves.push(oneMoveSqr);
     }
 
-    console.log(TAG + ` pawn moves: `);
+    // console.log(TAG + ` pawn moves: `);
     moves.forEach((sqr) => {
-        console.log(TAG + `sqr: ${sqr.position}`)
+        // console.log(TAG + `sqr: ${sqr.position}`)
     })
 
     piece.moves = moves;
+    return moves;
 }
 
 export const handleBishopMove = (fromSquare, toSquare) => {
@@ -241,9 +243,9 @@ export const handleBishopMove = (fromSquare, toSquare) => {
         if (isCaptureMove) {
             return true;
         }
-        console.log(TAG + `Not a valid move ( ${fromSquare.position} -> ${toSquare.position}), violates one of these rules: 
-            \n Is it a legal capture ${isCaptureMove}
-            \n Is legal positional move: ${isLegalMove}`)
+        // console.log(TAG + `Not a valid move ( ${fromSquare.position} -> ${toSquare.position}), violates one of these rules: 
+        //     \n Is it a legal capture ${isCaptureMove}
+        //     \n Is legal positional move: ${isLegalMove}`)
         return false;
 
     } catch (e) {
@@ -283,10 +285,12 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
 
     // Moving left and up, decreasing file, increasing rank
     let squares = []
+    let allSquares = [];
     let nxtX = x; // file as char code
     let nxtY = y; // rank
 
-
+    let piecePinCounter = 0;
+    const pinnedPieces = []
     //TODO: add function to repalce duplicate code. 
     function shouldBreak() {
         if (file.charCodeAt(0) < xMin || file.charCodeAt(0) > xMax || nxtY < yMin || nxtY > yMax) {
@@ -317,16 +321,28 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             break; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
-        squares.push(sqr)
-        if (sqr.piece !== null) {
+        if (sqr.piece === null) {
             // There is a piece on the square, lets include this as the last one. 
-            break;
+            squares.push(sqr)
+            // break;
+        } else if (sqr.piece !== null && sqr.piece.color !== selectedPiece.color) {
+            // Square contains a piece, check how many!
+            piecePinCounter++;
+            pinnedPieces.push(sqr)
         }
+        allSquares.push(sqr);
     }
+
+    // if (piecePinCounter !== 2) {
+    //     console.log(`No pinned pieces. `)
+    // } else {
+    //     console.log(`Pieces are pinned!! `)
+    // }
 
     nxtX = x; // file as char code
     nxtY = y; // rank
     // console.log(TAG + `calculate steps left + down`);
+    piecePinCounter = 0;
     for (let i = 0; i < maxStepsLeft; i++) {
 
         nxtX -= 1; // move left one file
@@ -340,12 +356,28 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             break; // stop if we go out of bounds
         }
         const sqr = chessboard.gameState.get(pos)
-        squares.push(sqr)
-        if (sqr.piece !== null) {
+        // squares.push(sqr)
+        // if (sqr.piece !== null) {
+        //     // There is a piece on the square, lets include this as the last one. 
+        //     break;
+        // }
+        if (sqr.piece === null) {
             // There is a piece on the square, lets include this as the last one. 
-            break;
+            squares.push(sqr)
+            // break;
+        } else if (sqr.piece !== null && sqr.piece.color !== selectedPiece.color) {
+            // Square contains a piece, check how many!
+            piecePinCounter++;
+            pinnedPieces.push(sqr)
         }
+        allSquares.push(sqr);
     }
+
+    // if (piecePinCounter !== 2) {
+    //     console.log(`No pinned pieces. `)
+    // } else {
+    //     console.log(`Pieces are pinned!! `)
+    // }
 
 
     // console.log(TAG + `Now checking right path... ${maxStepsRight}`);
@@ -353,8 +385,9 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     // Moving right and down, increasing file, decreasing rank
     nxtX = x;
     nxtY = y;
-    // console.log(TAG + `calculate right + down`)
 
+    // console.log(TAG + `calculate right + down`)
+    piecePinCounter = 0;
     for (let i = 0; i < maxStepsRight; i++) {
 
         nxtX += 1; // move right one file
@@ -368,16 +401,33 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
 
         const sqr = chessboard.gameState.get(pos)
-        squares.push(sqr)
-        if (sqr.piece !== null) {
+        // squares.push(sqr)
+        // if (sqr.piece !== null) {
+        //     // There is a piece on the square, lets include this as the last one. 
+        //     break;
+        // }
+        if (sqr.piece === null) {
             // There is a piece on the square, lets include this as the last one. 
-            break;
+            squares.push(sqr)
+            // break;
+        } else if (sqr.piece !== null && sqr.piece.color !== selectedPiece.color) {
+            // Square contains a piece, check how many!
+            piecePinCounter++;
+            pinnedPieces.push(sqr)
         }
-
+        allSquares.push(sqr);
     }
+
+    // if (piecePinCounter !== 2) {
+    //     console.log(`No pinned pieces. `)
+    // } else {
+    //     console.log(`Pieces are pinned!! `)
+    // }
 
     nxtX = x;
     nxtY = y;
+    piecePinCounter = 0;
+
     // console.log(TAG + ` calculate right + up`);
     for (let i = 0; i < maxStepsRight; i++) {
         nxtX += 1; // move right one file
@@ -392,15 +442,30 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
         }
 
         const sqr = chessboard.gameState.get(pos)
-        squares.push(sqr)
-        if (sqr.piece !== null) {
+        // squares.push(sqr)
+        // if (sqr.piece !== null) {
+        //     // There is a piece on the square, lets include this as the last one. 
+        //     break;
+        // }
+        if (sqr.piece === null) {
             // There is a piece on the square, lets include this as the last one. 
-            break;
+            squares.push(sqr);
+            // break;
+        } else if (sqr.piece.color !== selectedPiece.color) {
+            // Square contains a piece, check how many!
+            piecePinCounter++;
+            pinnedPieces.push(sqr)
         }
+        allSquares.push(sqr);
     }
 
+    // if (piecePinCounter !== 2) {
+    //     console.log(`No pinned pieces. `)
+    // } else {
+    //     console.log(`Pieces are pinned!! `)
+    // }
     selectedPiece.moves = squares;
-    return squares;
+    return allSquares;
 }
 
 // Returns a boolean if knight move is legal. 
@@ -587,12 +652,12 @@ export const calculateRookMoves = (fromSquare) => {
     nxtY = y;
     //dist to left (a-file)
 
-    console.log(TAG + `rook total dist left = ${leftMoves}`)
+    // console.log(TAG + `rook total dist left = ${leftMoves}`)
 
     for (let i = 0; i < leftMoves; i++) {
         nxtX -= 1
         const file = String.fromCharCode(nxtX);
-        console.log(TAG + `rook moves left: file = ${file} was ${nxtX}`)
+        // console.log(TAG + `rook moves left: file = ${file} was ${nxtX}`)
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [left] = ${pos}`);
         const sqr = chessboard.gameState.get(pos);
@@ -645,7 +710,7 @@ export const handleQueenMoves = (fromSquare, toSquare) => {
     }
     const canMoveDiagonal = handleBishopMove(fromSquare, toSquare);
     const canMoveStraight = handleRookMoves(fromSquare, toSquare);
-    console.log(TAG + `Can move diagonal ${canMoveDiagonal} straight: ${canMoveStraight}`)
+    // console.log(TAG + `Can move diagonal ${canMoveDiagonal} straight: ${canMoveStraight}`)
     return canMoveDiagonal || canMoveStraight;
 }
 
@@ -657,7 +722,7 @@ export const calculateQueenMoves = (fromSquare) => {
     moves.push(...diagonalMoves);
     moves.push(...rookMoves);
     piece.moves = moves;
-
+    return moves;
 }
 
 export const handleKingMoves = (fromSquare, toSquare) => {
@@ -676,7 +741,7 @@ export const handleKingMoves = (fromSquare, toSquare) => {
             if (toSquare.piece.color !== piece.color) {
                 return true;
             } else {
-                console.log(TAG + `square has piece but it is the same color.`)
+                // console.log(TAG + `square has piece but it is the same color.`)
                 return false;
             }
         } else { // square is in legal moves and no piece is on that square. 
@@ -715,14 +780,14 @@ export const calculateKingMoves = (fromSquare) => {
             newPos = newFile + legalYUp;
             moveCoords.push(newPos);
         } else {
-            console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
+            // console.log(TAG + `Invalid Rank Up king: ${legalYUp}`)
         }
 
         if (validateRank(legalYDown.toString())) {
             newPos = newFile + legalYDown;
             moveCoords.push(newPos);
         } else {
-            console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
+            // console.log(TAG + `Invalid Rank Down king: ${legalYDown}`)
 
         }
 
@@ -777,6 +842,8 @@ export const calculateKingMoves = (fromSquare) => {
         const sqr = gameState.get(pos);
         squares.push(sqr)
     });
+
     piece.moves = squares;
+
     return squares;
 }
