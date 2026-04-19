@@ -14,7 +14,7 @@ export class Chessboard {
     constructor() {
         this.TAG = "Chessboard.js -> "
         this.gameStateManager = GameStateManager.getInstance();
-        this.gameState = this.gameStateManager.gameState;
+        this.gameState = this.gameStateManager.GameState;
 
         this.gameStateManager.generateChessboard();
         this.gameStateManager.setPieces();

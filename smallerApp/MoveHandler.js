@@ -1,3 +1,4 @@
+import { GameStateManager } from "./GameStateManage.js";
 import { Square } from "./Square.js";
 
 const TAG = "MoveHandler: ";
@@ -136,7 +137,7 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
 
 export const calculatePawnMoves = (fromSquare) => {
     const piece = fromSquare.piece;
-    const gameState = fromSquare.chessboard.gameState;
+    const gameState = GameStateManager.getInstance().GameState;
 
     function canDoubleMove(fromSquare) {
         const piece = fromSquare.piece;
@@ -195,6 +196,7 @@ export const calculatePawnMoves = (fromSquare) => {
     let x = fromSquare.file.charCodeAt(0);
     let y = fromSquare.rank;
 
+    console.log(TAG + `GameState: `, gameState)
     if (canDoubleMove(fromSquare)) {
         const sqr2 = String.fromCharCode(x) + (y + 2);
         moves.push(gameState.get(sqr2));
@@ -728,7 +730,7 @@ export const calculateQueenMoves = (fromSquare) => {
 export const handleKingMoves = (fromSquare, toSquare) => {
 
     const piece = fromSquare.piece;
-    const gameState = fromSquare.chessboard.gameState;
+    const gameState = GameStateManager.getInstance().GameState;
     const moves = calculateKingMoves(fromSquare);
 
     // Check for threats on square, 
@@ -754,7 +756,7 @@ export const handleKingMoves = (fromSquare, toSquare) => {
 
 export const calculateKingMoves = (fromSquare) => {
     const piece = fromSquare.piece;
-    const gameState = fromSquare.chessboard.gameState;
+    const gameState = GameStateManager.getInstance().GameState;
     // Filter Diagonal moves, that are only 1 file away? 
 
     const x = fromSquare.file.charCodeAt(0);

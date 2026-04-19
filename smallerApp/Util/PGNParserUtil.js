@@ -52,9 +52,8 @@ export class PGNParserUtil {
             console.log(`Parsing move: ${move}`);
 
             if (move.includes('(')) {
-
-                const variation = move.substring(move.indexOf('(') + 1, move.lastIndexOf(')'));
-                const variationMoves = handleVariation(variation);
+                const variation = moves.substring(moves.indexOf(move) + 1, moves.lastIndexOf(')'));
+                const variationMoves = this.handleVariation(variation);
                 extractedMoves.push(...variationMoves);
             }
 

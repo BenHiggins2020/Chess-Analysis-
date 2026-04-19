@@ -192,7 +192,7 @@ export class GameStateManager {
     }
 
     getSquare(position) {
-        return this.gameState.get(position);
+        return this.#gameState.get(position);
     }
 
     updateKingSquares(square) {
@@ -232,7 +232,7 @@ export class GameStateManager {
             case 'black':
                 console.log(this.TAG + ` Black's ${square.piece.type} on ${square.position} `)
 
-                const kingSquare = this.gameState.get(this.whiteKingPos)
+                const kingSquare = this.#gameState.get(this.whiteKingPos)
                 if (moves.includes(
                     (kingSquare)
                 )) {
@@ -242,7 +242,7 @@ export class GameStateManager {
                 }
 
                 // Calculate the moves for king. 
-                this.whiteKingMoves = calculateKingMoves(this.gameState.get(this.whiteKingPos));
+                this.whiteKingMoves = calculateKingMoves(this.#gameState.get(this.whiteKingPos));
                 const initialWhiteKingMovesCount = this.whiteKingMoves.length;
 
                 this.whiteKingMoves.forEach((sqr) => {
@@ -257,19 +257,19 @@ export class GameStateManager {
                     }
                 })
 
-                this.gameState.get(this.whiteKingPos).piece.moves = this.whiteKingMoves; // update the king moves in the piece object.
+                this.#gameState.get(this.whiteKingPos).piece.moves = this.whiteKingMoves; // update the king moves in the piece object.
                 console.log(this.TAG + `filtered white king moves: ${this.whiteKingMoves.length} of ${initialWhiteKingMovesCount}`)
 
                 // check for threats 
                 break;
             case 'white':
                 console.log(this.TAG + ` White's ${square.piece.type} on ${square.position} `)
-                if (moves.includes((this.gameState.get(this.blackKingMoves)))) {
+                if (moves.includes((this.#gameState.get(this.blackKingMoves)))) {
                     // Check!!
                     console.warn(this.TAG + ` CHECK!!! `)
                     this.setChecked('black');
                 }
-                this.blackKingMoves = calculateKingMoves(this.gameState.get(this.blackKingPos));
+                this.blackKingMoves = calculateKingMoves(this.#gameState.get(this.blackKingPos));
                 const initialBlackKingMovesCount = this.blackKingMoves.length;
                 this.blackKingMoves.forEach((sqr) => {
 
@@ -287,7 +287,7 @@ export class GameStateManager {
                         })
                     }
                 })
-                this.gameState.get(this.blackKingPos).piece.moves = this.blackKingMoves; // update the king moves in the piece object.
+                this.#gameState.get(this.blackKingPos).piece.moves = this.blackKingMoves; // update the king moves in the piece object.
                 console.log(this.TAG + `filtered black king moves: ${this.blackKingMoves.length} of ${initialBlackKingMovesCount}`)
                 // check for threats on black... 
                 break;
