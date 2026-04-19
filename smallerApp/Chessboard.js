@@ -16,26 +16,26 @@ export class Chessboard {
         this.gameStateManager = GameStateManager.getInstance();
         this.gameState = this.gameStateManager.gameState;
 
-        this.generateChessboard();
-        this.setPieces();
+        this.gameStateManager.generateChessboard();
+        this.gameStateManager.setPieces();
     }
 
-    generateChessboard = () => {
-        console.log(this.TAG + "Generating chessboard...");
-        // const chessboard = document.getElementById('chessboard-container');
-        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-        const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
-        for (let rank of ranks) {
-            for (let file of files) {
-                const squareObj = new Square(file, rank, this);
-                const squareName = squareObj.file + squareObj.rank;
-                this.gameState.set(
-                    squareName,
-                    squareObj
-                );
-            }
-        }
-    }
+    // generateChessboard = () => {
+    //     console.log(this.TAG + "Generating chessboard...");
+    //     // const chessboard = document.getElementById('chessboard-container');
+    //     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    //     const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+    //     for (let rank of ranks) {
+    //         for (let file of files) {
+    //             const squareObj = new Square(file, rank, this);
+    //             const squareName = squareObj.file + squareObj.rank;
+    //             this.gameState.set(
+    //                 squareName,
+    //                 squareObj
+    //             );
+    //         }
+    //     }
+    // }
 
     handleMove = (fromCoord, toCoord) => {
         if (fromCoord === toCoord) {

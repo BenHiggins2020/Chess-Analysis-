@@ -1,8 +1,15 @@
 import { calculateKingMoves, calculateKnightMoves, calculatePawnMoves, calculateQueenMoves, calculateRookMoves, calculateBishopPath } from "./MoveHandler.js";
+import { Square } from "./Square.js";
+import { Piece } from "./Piece.js";
+import { PGNParserUtil } from "./Util/PGNParserUtil.js";
+import { ClaudePGNParser } from "./Util/claudePgnParser.js";
 
 export class GameStateManager {
     static #instance = null;
     #selected = null
+    #currentPlayer = 'white';
+    #gameState = new Map(); // key: square position (e.g. "e4"), value: Square object
+
 
     constructor(name) {
         this.TAG = "GameStateManager: "
@@ -12,14 +19,140 @@ export class GameStateManager {
         this.name = name
         GameStateManager.#instance = this;
 
+        this.pgnParser = new ClaudePGNParser();
         //Handle King stuff: 
         this.blackKingMoves = [];
         this.blackKingPos = 'e8';
         this.whiteKingMoves = [];
         this.whiteKingPos = 'e1';
-        this.gameState = new Map();
     }
 
+    get currentPlayer() {
+        return this.#currentPlayer;
+    }
+
+    set currentPlayer(color) {
+        if (color !== 'white' && color !== 'black') {
+            console.error(this.TAG + "Invalid player color: " + color);
+            return;
+        }
+        console.log(this.TAG + `Switching player to: ${color}`);
+        this.#currentPlayer = color;
+    }
+
+    generateChessboard = () => {
+        console.log(this.TAG + "Generating chessboard...");
+        // const chessboard = document.getElementById('chessboard-container');
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+        for (let rank of ranks) {
+            for (let file of files) {
+                const squareObj = new Square(file, rank, this);
+                const squareName = squareObj.file + squareObj.rank;
+                this.#gameState.set(
+                    squareName,
+                    squareObj
+                );
+            }
+        }
+    }
+
+    setPieces = () => {
+        if (this.#gameState.size === 0) {
+            console.error(this.TAG + "Game state is empty. Cannot set pieces.");
+            return;
+        }
+
+        // Set Pawns: Rank 2
+        let rank = 2;
+        for (let file of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+            const piece = new Piece('P', 'w', this);
+            const square = this.#gameState.get(`${file}${rank}`);
+            square.setPiece(piece);
+        }
+
+        rank = 7;
+        for (let file of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+            const piece = new Piece('p', 'b', this);
+            const square = this.#gameState.get(`${file}${rank}`);
+            square.setPiece(piece);
+        }
+
+        let rookPositions = ['a1', 'h1']
+        for (let pos of rookPositions) {
+            const piece = new Piece('R', 'w', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+
+        rookPositions = ['a8', 'h8']
+        for (let pos of rookPositions) {
+            const piece = new Piece('r', 'b', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+
+        let knightPositions = ['b1', 'g1']
+        for (let pos of knightPositions) {
+            const piece = new Piece('N', 'w', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+
+        knightPositions = ['b8', 'g8']
+        for (let pos of knightPositions) {
+            const piece = new Piece('n', 'b', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+
+        let bishopPositions = ['c1', 'f1']
+        for (let pos of bishopPositions) {
+            const piece = new Piece('B', 'w', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+        bishopPositions = ['c8', 'f8']
+        for (let pos of bishopPositions) {
+            const piece = new Piece('b', 'b', this);
+            const square = this.#gameState.get(pos);
+            square.setPiece(piece);
+        }
+
+        let queenPosition = 'd1';
+        let piece = new Piece('Q', 'w', this);
+        let square = this.#gameState.get(queenPosition);
+        square.setPiece(piece);
+        queenPosition = 'd8';
+
+        piece = new Piece('q', 'b', this);
+        square = this.#gameState.get(queenPosition);
+        square.setPiece(piece);
+
+        let kingPosition = 'e1';
+        piece = new Piece('K', 'w', this);
+        square = this.#gameState.get(kingPosition);
+        square.setPiece(piece);
+
+        kingPosition = 'e8';
+        piece = new Piece('k', 'b', this);
+        square = this.#gameState.get(kingPosition);
+        square.setPiece(piece);
+
+        // Now we need to place this piece on the correct square based on its type and color.
+        // For example, for white pieces:
+        // - Pawns (P) go on rank 2 (a2, b2, c2, d2, e2, f2, g2, h2)
+        // - Rooks (R) go on a1 and h1
+        // - Knights (N) go on b1 and g1
+        // - Bishops (B) go on c1 and f1
+        // - Queen (Q) goes on d1
+        // - King (K) goes on e1
+        // For black pieces, it's similar but on ranks 7 and 8.
+    };
+
+    get GameState() {
+        return this.#gameState;
+    }
 
     setSelected(square) {
         console.log(this.TAG + `square: `, square);
@@ -56,6 +189,10 @@ export class GameStateManager {
             GameStateManager.#instance = new GameStateManager(name);
         }
         return GameStateManager.#instance;
+    }
+
+    getSquare(position) {
+        return this.gameState.get(position);
     }
 
     updateKingSquares(square) {
@@ -193,6 +330,207 @@ export class GameStateManager {
         //  blocking the check with another piece,
         //  or capturing the checking piece.
 
+
+    }
+
+
+    generateFEN() {
+        let fen = "";
+        let rowCount = 8;
+
+        while (rowCount >= 1) {
+            let fileCount = 1;
+            while (fileCount <= 8) {
+                const square = this.getSquare(`${fileCount}-${rowCount}`);
+                if (square) {
+                    let piece = square.piece;
+                    if (piece) {
+                        fen += piece.symbol;
+                    } else {
+                        fen += "0"; // Empty square
+                    }
+                } else {
+                    fen += "0";
+                }
+                fileCount++;
+            }
+            fen += "\n";
+            rowCount--;
+        }
+        return fen;
+    }
+
+    parseFEN(fen) {
+        this.#gameState = new Map();
+        const fenRows = fen.trim().split('\n');
+
+        for (let row = 0; row < fenRows.length; row++) {
+            const fenLine = fenRows[row].trim();
+            if (fenLine === "") continue; // Skip empty lines
+
+            for (let col = 0; col < fenLine.length; col++) {
+                const char = fenLine[col];
+                if (char === '0') {
+                    continue; // Empty square
+                }
+
+                const pieceType = char;
+                const color = char === 'k' || char === 'q' ? 'b' : (char === 'K' || char === 'Q') ? 'w' : null;
+                if (!color) {
+                    console.warn("Invalid FEN:  Non-standard piece");
+                    continue;
+                }
+
+                const square = new Square(col + 1, row + 1, this);
+                square.piece = new Piece(pieceType, color, this);
+                this.#gameState.set(`${col + 1}-${row + 1}`, square);
+            }
+        }
+    }
+
+
+    generatePGN() {
+        let pgn = "PGN Version:\n";
+        pgn += "1. ";
+
+        let moves = [];
+        for (const [position, square] of this.#gameState) {
+            if (square.piece) {
+                moves.push(`{${position}} ${square.piece.symbol}`);
+            }
+        }
+
+        pgn += moves.join(", ");
+
+        return pgn;
+    }
+
+    parsePGN(pgnString, outputElement) {
+        // This is a simplified parsing.  A real implementation would need to
+        // handle variations, annotations, etc.
+        const moves = this.pgnParser.parsePGN(pgnString);
+        console.log(moves);
+
+        return;
+        const lines = pgnString.trim().split('\n');
+        // Simplest case: just the first move
+        if (lines.length === 1) {
+            // Example: "1. e2e4"
+            const parts = lines[0].split(' ');
+            // let partsDot = lines[0].trim().split('.');
+            // partsDot = partsDot.slice(0, 0); // drop the move number
+
+            // const ul = document.createElement('ul');
+            // outputElement.appendChild(ul);
+
+            // partsDot.forEach((part, index) => {
+            //     console.log(this.TAG + `part ${index}: ${part.slice(0, -1)}`);
+            //     // const li = document.createElement('li');
+            //     // part.slice(0, -1)
+            //     // li.textContent = part;
+            //     // ul.appendChild(li);
+            // });
+            // outputElement.textContent = partsDot;
+            console.log(this.TAG + `Parsing PGN line: ${parts.length} parts: ${parts[0]}`);
+            // console.log(this.TAG + `Parsing PGN w/. as line: ${partsDot.length} parts: ${partsDot[0]}`);
+            if (parts.length === 3) {
+                const from = parts[0];
+                const to = parts[1];
+                const piece = parts[2];
+
+                console.log(this.TAG + `Parsed PGN move: 
+                    from ${from}
+                    to ${to}
+                    with piece ${piece}`);
+                // Find the squares
+                const fromSquare = this.#gameState.get(from);
+                const toSquare = this.#gameState.get(to);
+
+                if (fromSquare && toSquare) {
+                    // Set the move
+                    this.handleMove(fromSquare.position, toSquare.position);
+                } else {
+                    console.error("Could not find squares in PGN");
+                }
+            } else {
+                console.error("Invalid PGN format");
+            }
+        } else {
+            console.warn("Multiple moves in PGN - parsing incomplete.");
+        }
+    }
+
+    findSquare(squareNotation) {
+        // Convert the notation to row and column indices.  Handles both
+        // algebraic and numeric notations.
+
+        const notation = squareNotation.toLowerCase();
+
+        // Handle numeric notation (e.g., "a1")
+        if (/^[1-8][a-h]$/.test(notation)) {
+            const col = notation.match(/[a-h]/)[0];
+            const row = parseInt(notation.replace(/[a-h]/g, ''), 10);
+            return { row: row, col: col };
+        }
+
+        // Handle algebraic notation (e.g., "e2")
+        if (/^[a-h][1-8]$/.test(notation)) {
+            const col = notation.match(/[a-h]/)[0];
+            const row = parseInt(notation.replace(/[a-h]/g, ''), 10);
+            return { row: row, col: col };
+        }
+
+        // Handle mixed notation (e.g., "e2") - last resort
+        if (/^[a-h][1-8]$/.test(notation)) {
+            const col = notation.match(/[a-h]/)[0];
+            const row = parseInt(notation.replace(/[a-h]/g, ''), 10);
+            return { row: row, col: col };
+        }
+
+        // Invalid notation
+        return null;
+    }
+
+
+    handleMove = (fromCoord, toCoord) => {
+        if (fromCoord === toCoord) {
+            console.error(this.TAG + "Cannot move to the same square: " + fromCoord);
+            return;
+        }
+
+        console.log(this.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
+
+        const fromSquare = this.#gameState.get(fromCoord);
+        const toSquare = this.#gameState.get(toCoord);
+
+        if (!fromSquare || !toSquare) {
+            console.error(this.TAG + `Invalid move from ${fromSquare} to ${toSquare}`);
+            return;
+        }
+
+        const piece = fromSquare.piece;
+
+
+        if (piece.canMoveTo(fromSquare, toSquare, this)) {
+            // Move the piece (continue)
+        } else {
+            return; // Do nothing if the move is invalid
+        }
+
+
+        fromSquare.render();
+        toSquare.render();
+
+
+        //update gamestate
+
+        this.#gameState.get(fromSquare.position).removePiece()
+        this.#gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
+
+        // does piece on square target king or king square? 
+        this.checkForThreats(toSquare);
+
+        this.deselect();
 
     }
 }

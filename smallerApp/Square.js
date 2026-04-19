@@ -193,7 +193,8 @@ export class Square {
                     const fromCoord = this.file + this.rank;
                     const toCoord = square.dataset.file + square.dataset.rank;
 
-                    this.chessboard.handleMove(fromCoord, toCoord);
+                    console.log(this.TAG + `Attempting move from ${fromCoord} to ${toCoord}`);
+                    GameStateManager.getInstance().handleMove(fromCoord, toCoord);
                 } else {
                     // Snap back if dropped in the void
                     selectedPiece.style.left = '';
