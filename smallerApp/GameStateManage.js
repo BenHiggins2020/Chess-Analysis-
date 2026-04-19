@@ -3,6 +3,7 @@ import { Square } from "./Square.js";
 import { Piece } from "./Piece.js";
 import { PGNParserUtil } from "./Util/PGNParserUtil.js";
 import { ClaudePGNParser } from "./Util/claudePgnParser.js";
+import { createPGNTracker } from "./Util/PGNWriter.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -25,6 +26,7 @@ export class GameStateManager {
         this.blackKingPos = 'e8';
         this.whiteKingMoves = [];
         this.whiteKingPos = 'e1';
+        this.PGNTracker = createPGNTracker({ "White": "Player 1", "Black": "Player 2" });
     }
 
     get currentPlayer() {
@@ -150,6 +152,15 @@ export class GameStateManager {
         // For black pieces, it's similar but on ranks 7 and 8.
     };
 
+    clearPieces() {
+        this.#gameState.forEach((square) => {
+            if (square.piece) {
+                square.removePiece();
+            }
+        });
+
+    }
+
     get GameState() {
         return this.#gameState;
     }
@@ -195,6 +206,18 @@ export class GameStateManager {
         return this.#gameState.get(position);
     }
 
+    resetBoard() {
+        this.clearPieces();
+        this.setPieces();
+        // clear fen and pgn
+        this.whiteKingMoves = [];
+        this.whiteKingPos = 'e1';
+        this.blackKingMoves = [];
+        this.blackKingPos = 'e8';
+        this.checked = null;
+        this.PGNTracker.reset({ White: "Player 1", Black: "Player 2" });
+    }
+
     updateKingSquares(square) {
         //square is the new square the king is on... 
         const kingMoves = []
@@ -230,7 +253,7 @@ export class GameStateManager {
 
         switch (square.piece.color) {
             case 'black':
-                console.log(this.TAG + ` Black's ${square.piece.type} on ${square.position} `)
+                // console.log(this.TAG + ` Black's ${square.piece.type} on ${square.position} `)
 
                 const kingSquare = this.#gameState.get(this.whiteKingPos)
                 if (moves.includes(
@@ -247,10 +270,10 @@ export class GameStateManager {
 
                 this.whiteKingMoves.forEach((sqr) => {
 
-                    console.log(this.TAG + `checking white king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
+                    // console.log(this.TAG + `checking white king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
 
                     if (moves.includes(sqr)) {
-                        console.log(this.TAG + `removing white king move: ${sqr.position} from legal moves, because it is threatened by piece on ${square.position}`)
+                        // console.log(this.TAG + `removing white king move: ${sqr.position} from legal moves, because it is threatened by piece on ${square.position}`)
                         this.whiteKingMoves = this.whiteKingMoves.filter((value, index, moves) => {
                             !moves.includes(value)
                         })
@@ -258,12 +281,12 @@ export class GameStateManager {
                 })
 
                 this.#gameState.get(this.whiteKingPos).piece.moves = this.whiteKingMoves; // update the king moves in the piece object.
-                console.log(this.TAG + `filtered white king moves: ${this.whiteKingMoves.length} of ${initialWhiteKingMovesCount}`)
+                // console.log(this.TAG + `filtered white king moves: ${this.whiteKingMoves.length} of ${initialWhiteKingMovesCount}`)
 
                 // check for threats 
                 break;
             case 'white':
-                console.log(this.TAG + ` White's ${square.piece.type} on ${square.position} `)
+                // console.log(this.TAG + ` White's ${square.piece.type} on ${square.position} `)
                 if (moves.includes((this.#gameState.get(this.blackKingMoves)))) {
                     // Check!!
                     console.warn(this.TAG + ` CHECK!!! `)
@@ -273,22 +296,22 @@ export class GameStateManager {
                 const initialBlackKingMovesCount = this.blackKingMoves.length;
                 this.blackKingMoves.forEach((sqr) => {
 
-                    console.log(this.TAG + `checking black king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
+                    // console.log(this.TAG + `checking black king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
 
                     if (moves.includes(sqr)) {
                         this.blackKingMoves = this.blackKingMoves.filter((value, index, moves) => {
                             !moves.includes(value)
                         })
 
-                        console.log(this.TAG + `filtered blackKingMoves moves: ${this.blackKingMoves.length} of 8`)
+                        // console.log(this.TAG + `filtered blackKingMoves moves: ${this.blackKingMoves.length} of 8`)
 
-                        this.blackKingMoves.forEach((move) => {
-                            console.log(this.TAG + `black king moves: ${move.position}`)
-                        })
+                        // this.blackKingMoves.forEach((move) => {
+                        // console.log(this.TAG + `black king moves: ${move.position}`)
+                        // })
                     }
                 })
                 this.#gameState.get(this.blackKingPos).piece.moves = this.blackKingMoves; // update the king moves in the piece object.
-                console.log(this.TAG + `filtered black king moves: ${this.blackKingMoves.length} of ${initialBlackKingMovesCount}`)
+                // console.log(this.TAG + `filtered black king moves: ${this.blackKingMoves.length} of ${initialBlackKingMovesCount}`)
                 // check for threats on black... 
                 break;
         }
@@ -405,60 +428,7 @@ export class GameStateManager {
         return pgn;
     }
 
-    parsePGN(pgnString, outputElement) {
-        // This is a simplified parsing.  A real implementation would need to
-        // handle variations, annotations, etc.
-        const moves = this.pgnParser.parsePGN(pgnString);
-        console.log(moves);
 
-        return;
-        const lines = pgnString.trim().split('\n');
-        // Simplest case: just the first move
-        if (lines.length === 1) {
-            // Example: "1. e2e4"
-            const parts = lines[0].split(' ');
-            // let partsDot = lines[0].trim().split('.');
-            // partsDot = partsDot.slice(0, 0); // drop the move number
-
-            // const ul = document.createElement('ul');
-            // outputElement.appendChild(ul);
-
-            // partsDot.forEach((part, index) => {
-            //     console.log(this.TAG + `part ${index}: ${part.slice(0, -1)}`);
-            //     // const li = document.createElement('li');
-            //     // part.slice(0, -1)
-            //     // li.textContent = part;
-            //     // ul.appendChild(li);
-            // });
-            // outputElement.textContent = partsDot;
-            console.log(this.TAG + `Parsing PGN line: ${parts.length} parts: ${parts[0]}`);
-            // console.log(this.TAG + `Parsing PGN w/. as line: ${partsDot.length} parts: ${partsDot[0]}`);
-            if (parts.length === 3) {
-                const from = parts[0];
-                const to = parts[1];
-                const piece = parts[2];
-
-                console.log(this.TAG + `Parsed PGN move: 
-                    from ${from}
-                    to ${to}
-                    with piece ${piece}`);
-                // Find the squares
-                const fromSquare = this.#gameState.get(from);
-                const toSquare = this.#gameState.get(to);
-
-                if (fromSquare && toSquare) {
-                    // Set the move
-                    this.handleMove(fromSquare.position, toSquare.position);
-                } else {
-                    console.error("Could not find squares in PGN");
-                }
-            } else {
-                console.error("Invalid PGN format");
-            }
-        } else {
-            console.warn("Multiple moves in PGN - parsing incomplete.");
-        }
-    }
 
     findSquare(squareNotation) {
         // Convert the notation to row and column indices.  Handles both
@@ -493,11 +463,28 @@ export class GameStateManager {
 
 
     handleMove = (fromCoord, toCoord) => {
+
+
+
+        //// Castling — just push the king's from and to squares, it auto-detects
+        // handleMove('e1', 'g1'); // → O-O
+        // handleMove('e1', 'c1'); // → O-O-O
+
+
+        // console.log(this.TAG + `CONVERT MOVE TO PGN`, PGNParserUtil.convertPositionsToPGNMove(fromCoord, toCoord));
         if (fromCoord === toCoord) {
             console.error(this.TAG + "Cannot move to the same square: " + fromCoord);
             return;
         }
-
+        const result = this.PGNTracker.push(fromCoord, toCoord);
+        //UI?? 
+        // console.log(result.san);        // 'Nf3'
+        // console.log(result.color);      // 'white'
+        // console.log(result.piece);      // 'N'
+        // console.log(result.capture);    // false
+        // console.log(result.check);      // false
+        console.log(result.pgn);        // full PGN string so far
+        document.getElementById("analysis").textContent = result.pgn;
         console.log(this.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
 
         const fromSquare = this.#gameState.get(fromCoord);

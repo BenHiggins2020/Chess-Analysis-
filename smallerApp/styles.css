@@ -29,11 +29,11 @@
     }
     .column-left {
         flex: 1;
-        /* background-color: #F6F09F; */
+        background-color: #F6F09F;
     }
     .column-right {
         flex: 1;
-        /* background-color: #BED4CB; */
+        background-color: #BED4CB;
     }
 
   

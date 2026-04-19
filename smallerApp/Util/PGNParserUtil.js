@@ -1,5 +1,59 @@
 export class PGNParserUtil {
 
+    static convertPositionsToPGNMove = (fromSquare, toSquare) => {
+        return convertMoves(fromSquare, toSquare);
+        function convertMoves(startPosition, endPosition) {
+            // Helper arrays for standard chess piece symbols
+            const uppercasePieces = ['♜', '♞', '♝', '♛', '♚', '♝', '♟'];
+            const lowercasePieces = ['r', 'n', 'b', 'q', 'k', 'b', 'p'];
+
+            // Extract file and rank from start position
+            const startLetter = startPosition[0];
+            let startRank = parseInt(startPosition.slice(1));
+
+            // Extract file and rank from end position
+            const endLetter = endPosition[0];
+            let endRank = parseInt(endPosition.slice(1));
+
+            const movesArray = [];
+            for (let i = 0; i < startPosition.length - 1; i += 2) {
+                // Get current start square
+                const currentStartLetter = startPosition[i];
+                const currentStartRank = parseInt(startPosition.slice(i + 1));
+
+                // Get moving piece from the start square's letter
+                let piece;
+                if (currentStartLetter === 'a') {
+                    piece = lowercasePieces[0];
+                } else if (currentStartLetter === 'h') {
+                    piece = uppercasePieces[6];
+                } else if (currentStartLetter === '1') {
+                    piece = lowercasePieces[3];
+                } else if (currentStartLetter === '8') {
+                    piece = uppercasePieces[7];
+                } else {
+                    // Handle other files and ranks
+                    const index = currentStartLetter.charCodeAt(0) - 'a'.charCodeAt(0);
+                    let rankIndex = parseInt(currentStartRank.toString());
+                    if (rankIndex < 2) {
+                        piece = lowercasePieces[index];
+                    } else if (rankIndex > 7) {
+                        piece = uppercasePieces[index];
+                    } else {
+                        // Default to pawn for unclear ranks
+                        piece = lowercasePieces[3];
+                    }
+                }
+
+                // Create PGN entry with start position and moving piece
+                movesArray.push(`${currentStartLetter}${currentStartRank}${piece}`);
+            }
+
+            return movesArray;
+        }
+    }
+
+
     static parsePGNMove = (moveString) => {
         // Regular expression to match move notation (e.g., "e2e4", "exd5", "Qxe7")
         const piecesWhite = ['p', 'n', 'b', 'r', 'q', 'k']; // Pawn, Knight, Bishop, Rook, Queen, King
