@@ -15,7 +15,7 @@
 
 const SF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
 
-async function createStockfish() {
+export async function createStockfish() {
     // Fetch the engine JS as text, wrap in a Blob, create Worker from blob:// URL.
     // This is necessary when running from file:// — browsers block Workers
     // created directly from cross-origin URLs in that context.

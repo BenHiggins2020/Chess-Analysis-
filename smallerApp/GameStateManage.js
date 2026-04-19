@@ -4,6 +4,7 @@ import { Piece } from "./Piece.js";
 import { PGNParserUtil } from "./Util/PGNParserUtil.js";
 import { ClaudePGNParser } from "./Util/claudePgnParser.js";
 import { createPGNTracker } from "./Util/PGNWriter.js";
+import { createStockfish } from "./Repository/StockfishApi.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -26,7 +27,15 @@ export class GameStateManager {
         this.blackKingPos = 'e8';
         this.whiteKingMoves = [];
         this.whiteKingPos = 'e1';
+        this.eval_before = 0;
+        this.eval_after = 0;
         this.PGNTracker = createPGNTracker({ "White": "Player 1", "Black": "Player 2" });
+        //this.stockfish = await createStockfish(); // from the earlier helper
+        this.setupStockfish();
+    }
+
+    async setupStockfish() {
+        this.stockfish = await createStockfish();
     }
 
     get currentPlayer() {
@@ -216,6 +225,12 @@ export class GameStateManager {
         this.blackKingPos = 'e8';
         this.checked = null;
         this.PGNTracker.reset({ White: "Player 1", Black: "Player 2" });
+
+        this.#currentPlayer = 'white';
+        this.updateStatus(this.#currentPlayer);
+        this.updateAnalysis("");
+
+
     }
 
     updateKingSquares(square) {
@@ -461,10 +476,21 @@ export class GameStateManager {
         return null;
     }
 
+    cpLossToQuality(loss) {
+        if (loss < 5) return 'excellent';   // nearly perfect
+        if (loss < 20) return 'good';
+        if (loss < 50) return 'inaccuracy';  // slightly wrong
+        if (loss < 150) return 'mistake';     // clearly bad
+        return 'blunder';                    // losing move
+    }
+
+    async analyse(fen) {
+        const result = await this.stockfish.analyse(fen, 16);
+        // console.log(this.TAG + `Stockfish evaluation:`, result);
+        return result;
+    }
 
     handleMove = (fromCoord, toCoord) => {
-
-
 
         //// Castling — just push the king's from and to squares, it auto-detects
         // handleMove('e1', 'g1'); // → O-O
@@ -476,16 +502,41 @@ export class GameStateManager {
             console.error(this.TAG + "Cannot move to the same square: " + fromCoord);
             return;
         }
-        const result = this.PGNTracker.push(fromCoord, toCoord);
+
+        const pgnTracker = this.PGNTracker.push(fromCoord, toCoord);
+        console.log(this.TAG + `PGN after move:`, pgnTracker);
+
+        const fen = this.PGNTracker.fen();
+        this.eval_before = this.eval_after;
+        const result = this.analyse(fen);
+        this.eval_after = result.cp;
+
+        console.log('Starting eval:', result.cp, 'Best first move:', result.bestMove);
+        console.log(this.TAG + `Stockfish evaluation:`, result);
+
+        const cpLoss = Math.max(0, this.eval_before + this.eval_after);
+        const quality = this.cpLossToQuality(cpLoss);
+        console.log(this.TAG + ` Centipawn loss:`, cpLoss);
+        console.log(this.TAG + ` Move quality:`, quality);
+
+        // console.log(`Centipawn loss: ${cpLoss}`);
+        // console.log(`Quality: ${quality}`);
+        // console.log(`Best move was: ${this.eval_after.bestMove}`); // in UCI e.g. 'g1f3'
+        // console.log(`Eval after: ${this.eval_after.cp}`);
         //UI?? 
         // console.log(result.san);        // 'Nf3'
         // console.log(result.color);      // 'white'
         // console.log(result.piece);      // 'N'
         // console.log(result.capture);    // false
         // console.log(result.check);      // false
-        console.log(result.pgn);        // full PGN string so far
-        document.getElementById("analysis").textContent = result.pgn;
+        console.log(pgnTracker.pgn);        // full PGN string so far
+
+
+
+        // document.getElementById("analysis").textContent = pgnTracker.pgn;
         console.log(this.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
+
+
 
         const fromSquare = this.#gameState.get(fromCoord);
         const toSquare = this.#gameState.get(toCoord);
@@ -497,8 +548,7 @@ export class GameStateManager {
 
         const piece = fromSquare.piece;
 
-
-        if (piece.canMoveTo(fromSquare, toSquare, this)) {
+        if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentPlayer) {
             // Move the piece (continue)
         } else {
             return; // Do nothing if the move is invalid
@@ -516,8 +566,26 @@ export class GameStateManager {
 
         // does piece on square target king or king square? 
         this.checkForThreats(toSquare);
-
         this.deselect();
 
+        // After Move, switch player. 
+        this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+        this.updateStatus(this.currentPlayer);
+        this.updateAnalysis(this.PGNTracker.pgn());
+    }
+
+    updateStatus(currentPlayer) {
+        const statusDisplay = document.getElementById("status");
+        statusDisplay.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} to move.`;
+    }
+
+    updateAnalysis(analysisText) {
+        console.log(this.TAG + `Updating analysis output:`, analysisText);
+        const analysisOutput = document.getElementById("analysis");
+        let str = analysisText.split(']').slice(-1)[0].trim(); // Get the last part after the last ']'
+
+
+        // console.log(this.TAG + `Extracted analysis text:`, str);
+        analysisOutput.textContent = str;
     }
 }

@@ -19,6 +19,8 @@ const pgn = document.getElementById("pgn");
 const loadPgnBtn = document.getElementById("load-pgn-btn");
 const analysisOutput = document.getElementById("analysis");
 
+const statusDisplay = document.getElementById("status");
+
 const resetBtn = document.getElementById("reset-btn");
 const prevMoveBtn = document.getElementById("prev-move-btn");
 const nextMoveBtn = document.getElementById("next-move-btn");
@@ -34,13 +36,15 @@ const pgnValue = " 1. e4 d5 2. exd5 Qxd5 3. Nc3 (3. Nf3 Bg4 (3... Nc6 4. d4) 4. 
 const pgnText = pgn.value.trim();
 
 console.log("Loading PGN:", pgnValue.trim());
-analysisOutput.value = gameState.PGNTracker.pgn;
+// analysisOutput.value = gameState.PGNTracker.pgn;
+
+gameState.UIHandler.updateStatus(statusDisplay);
 
 loadPgnBtn.addEventListener("click", () => {
     const pgnText = pgn.value.trim();
     if (pgnText) {
         console.log("Loading PGN:", pgnText);
-        analysisOutput.value = gameState.parsePGN(pgnText, analysisOutput);
+        // analysisOutput.value = gameState.parsePGN(pgnText, analysisOutput);
     } else {
         console.warn("PGN input is empty.");
     }
