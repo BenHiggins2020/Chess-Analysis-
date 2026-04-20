@@ -23,6 +23,12 @@
         /* background-color: #87B6BC ; */
         height: 100%;
     }
+    .btn-container {
+        display: flex;
+        padding-top: 10px;
+        flex-direction: column;
+        gap: 10px;
+    }
     .column {
         justify-items: center;
         padding: 10px

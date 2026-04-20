@@ -17,12 +17,40 @@
                     <p id="status">
                         White to move.
                     </p>
+
                     <button id="reset-btn" class="move-btn"> Reset Board </button>
                     <button id="prev-move-btn" class="move-btn"> Previous Move </button>
                     <button id="next-move-btn" class="move-btn"> Next Move </button>
+                    
+                    <div class="btn-container">
+                            <label>
+                                Play as White:
+                                <input type="radio" name="play-as" value="white" checked="true">
+                            </label>
 
+                            <label>
+                                Play as Black:
+                                <input type="radio" name="play-as" value="black">
+                            </label>
+                    </div>
+                    
+                    <div class="btn-container">
+                         <select id="ratingSelect">
+                        <option value="1200">beginner</option>
+                        <option value="1350-1400">1350-1400</option>
+                        <option value="1450-1500">1450-1500</option>
+                        <option value="1550-1600">1550-1600</option>
+                        <option value="1600-1750">1600-1750</option>
+                        <option value="1800+">1800+</option>
+                    </select>
+
+                    <button id="set-lines-btn">Set Stockfish Lines</button>
+
+                    <button id="start-btn">Start</button>
+                    </div>
+                   
+                    
                 </div>
-
                     
 
 

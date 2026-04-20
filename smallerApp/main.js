@@ -2,6 +2,8 @@ import { Chessboard } from "./Chessboard.js";
 import { Square } from "./Square.js";
 import { Piece } from "./Piece.js";
 import { GameStateManager } from "./GameStateManage.js"
+import { setStockfishLines } from "./Util/LineToRatingConvert.js";
+
 console.log("Script")
 const board = document.getElementById("board");
 const gameState = new GameStateManager();
@@ -21,6 +23,7 @@ const analysisOutput = document.getElementById("analysis");
 
 const statusDisplay = document.getElementById("status");
 
+
 const resetBtn = document.getElementById("reset-btn");
 const prevMoveBtn = document.getElementById("prev-move-btn");
 const nextMoveBtn = document.getElementById("next-move-btn");
@@ -36,9 +39,17 @@ const pgnValue = " 1. e4 d5 2. exd5 Qxd5 3. Nc3 (3. Nf3 Bg4 (3... Nc6 4. d4) 4. 
 const pgnText = pgn.value.trim();
 
 console.log("Loading PGN:", pgnValue.trim());
-// analysisOutput.value = gameState.PGNTracker.pgn;
 
-gameState.UIHandler.updateStatus(statusDisplay);
+const setStockfishLinesBtn = document.getElementById("set-lines-btn");
+
+setStockfishLinesBtn.addEventListener("click", () => {
+    const selectedRating = document.getElementById("ratingSelect").value;
+    try {
+        setStockfishLines(selectedRating);
+    } catch (error) {
+        console.error(error.message);
+    }
+});
 
 loadPgnBtn.addEventListener("click", () => {
     const pgnText = pgn.value.trim();
@@ -48,6 +59,15 @@ loadPgnBtn.addEventListener("click", () => {
     } else {
         console.warn("PGN input is empty.");
     }
+});
+
+
+const startBtn = document.getElementById("start-btn");
+
+startBtn.addEventListener("click", () => {
+    console.log("Starting game...");
+    GameStateManager.getInstance().onStart();
+    // analysisOutput.value = gameState.startAnalysis(analysisOutput);
 });
 
 

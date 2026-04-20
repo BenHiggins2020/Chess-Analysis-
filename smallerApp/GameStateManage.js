@@ -19,6 +19,8 @@ export class GameStateManager {
             throw new Error("Use getInstance")
         }
         this.name = name
+        this.player = "white";
+        this.stockfishLines = 4; // default lines for <= 1200 rating
         GameStateManager.#instance = this;
 
         this.pgnParser = new ClaudePGNParser();
@@ -34,8 +36,45 @@ export class GameStateManager {
         this.setupStockfish();
     }
 
+    setStockfishLines(lines) {
+        this.stockfishLines = lines;
+    }
+
     async setupStockfish() {
         this.stockfish = await createStockfish();
+    }
+
+    onStart() {
+        // Disable radio buttons, 
+        const selectedOption = document.querySelector('input[name="play-as"]:checked');
+        console.log(this.TAG + `Player chose to play as: ${selectedOption.value}`);
+        this.player = selectedOption.value;
+
+        // if (this.player === 'black') {
+        // need to have computer make the first move as white.
+        // flip the board. 
+        this.flipBoard();
+        // }
+
+    }
+
+    flipBoard() {
+        if (this.player === 'black') {
+            console.log(this.TAG + "Flipping board 180deg (playing as black)...");
+            const board = document.getElementById("board");
+            board.style.transform = "rotate(180deg)";
+            this.#gameState.forEach((square) => {
+                square.UI_ref.style.transform = "rotate(180deg)";
+            });
+        } else {
+            console.log(this.TAG + "Flipping board 0deg (playing as black)...");
+            const board = document.getElementById("board");
+            board.style.transform = "rotate(0deg)";
+            this.#gameState.forEach((square) => {
+                square.UI_ref.style.transform = "rotate(0deg)";
+            });
+        }
+
     }
 
     get currentPlayer() {
@@ -485,8 +524,8 @@ export class GameStateManager {
     }
 
     async analyse(fen) {
-        const result = await this.stockfish.analyse(fen, 16);
-        // console.log(this.TAG + `Stockfish evaluation:`, result);
+        const result = await this.stockfish.analyse(fen, this.stockfishLines);
+        console.log(this.TAG + `Stockfish evaluation:`, result);
         return result;
     }
 
@@ -511,13 +550,15 @@ export class GameStateManager {
         const result = this.analyse(fen);
         this.eval_after = result.cp;
 
+
         console.log('Starting eval:', result.cp, 'Best first move:', result.bestMove);
+
         console.log(this.TAG + `Stockfish evaluation:`, result);
 
         const cpLoss = Math.max(0, this.eval_before + this.eval_after);
         const quality = this.cpLossToQuality(cpLoss);
-        console.log(this.TAG + ` Centipawn loss:`, cpLoss);
-        console.log(this.TAG + ` Move quality:`, quality);
+        // console.log(this.TAG + ` Centipawn loss:`, cpLoss);
+        // console.log(this.TAG + ` Move quality:`, quality);
 
         // console.log(`Centipawn loss: ${cpLoss}`);
         // console.log(`Quality: ${quality}`);
@@ -529,7 +570,7 @@ export class GameStateManager {
         // console.log(result.piece);      // 'N'
         // console.log(result.capture);    // false
         // console.log(result.check);      // false
-        console.log(pgnTracker.pgn);        // full PGN string so far
+        // console.log(pgnTracker.pgn);        // full PGN string so far
 
 
 
@@ -580,7 +621,7 @@ export class GameStateManager {
     }
 
     updateAnalysis(analysisText) {
-        console.log(this.TAG + `Updating analysis output:`, analysisText);
+        // console.log(this.TAG + `Updating analysis output:`, analysisText);
         const analysisOutput = document.getElementById("analysis");
         let str = analysisText.split(']').slice(-1)[0].trim(); // Get the last part after the last ']'
 
