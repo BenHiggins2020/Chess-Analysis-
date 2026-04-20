@@ -154,7 +154,12 @@ export class Square {
             // Capture initial offset so piece doesn't "jump" center
             const shiftX = selectedPiece.offsetWidth / 2;
             const shiftY = selectedPiece.offsetHeight / 2;
-
+            const parentSquare = this.UI_ref;
+            document.body.appendChild(selectedPiece);
+            selectedPiece.style.position = "fixed";
+            selectedPiece.style.zIndex = "10000";
+            selectedPiece.style.left = `${e.clientX - shiftX}px`;
+            selectedPiece.style.top = `${e.clientY - shiftY}px`;
             const moveAt = (clientX, clientY) => {
                 selectedPiece.style.left = clientX - shiftX + 'px';
                 selectedPiece.style.top = clientY - shiftY + 'px';
