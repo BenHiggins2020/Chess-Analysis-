@@ -9,11 +9,12 @@ import { createStockfish } from "./Repository/StockfishApi.js";
 export class GameStateManager {
     static #instance = null;
     #selected = null
-    #currentPlayer = 'white';
+    #turn = 'white';
     #gameState = new Map(); // key: square position (e.g. "e4"), value: Square object
 
 
     constructor(name) {
+        this.playComputer = true;
         this.TAG = "GameStateManager: "
         if (GameStateManager.#instance) {
             throw new Error("Use getInstance")
@@ -44,19 +45,46 @@ export class GameStateManager {
         this.stockfish = await createStockfish();
     }
 
+    computerMove() {
+        const fen = this.PGNTracker.fen();
+        this.analyse(fen).then((result) => {
+            console.log(this.TAG + `Stockfish analysis result to start the game... `, result);
+            console.log(this.TAG + `Stockfish analysis result =  `, result.bestMove);
+            const bestMove = result.bestMove;
+            const pos1 = bestMove.substring(0, 2);
+            const pos2 = bestMove.substring(2, 4);
+            this.handleMove(pos1, pos2);
+
+        });
+    }
+
     onStart() {
         // Disable radio buttons, 
         const selectedOption = document.querySelector('input[name="play-as"]:checked');
         console.log(this.TAG + `Player chose to play as: ${selectedOption.value}`);
         this.player = selectedOption.value;
 
-        // if (this.player === 'black') {
         // need to have computer make the first move as white.
         // flip the board. 
         this.flipBoard();
+
+        if (this.player === 'black') {
+            // Computer makes the first move as white.
+            if (this.stockfish) {
+                const fen = this.PGNTracker.fen();
+                console.log(this.TAG + `Generating FEN for initial position... ${fen}`);
+                this.computerMove();
+            } else {
+                console.warn(this.TAG + "Stockfish is not initialized yet. Cannot make the first move as white.");
+                this.setupStockfish().then(() => {
+                    this.computerMove();
+                });
+            }
+        }
         // }
 
     }
+
 
     flipBoard() {
         if (this.player === 'black') {
@@ -74,20 +102,19 @@ export class GameStateManager {
                 square.UI_ref.style.transform = "rotate(0deg)";
             });
         }
-
     }
 
-    get currentPlayer() {
-        return this.#currentPlayer;
+    get currentTurn() {
+        return this.#turn;
     }
 
-    set currentPlayer(color) {
+    set currentTurn(color) {
         if (color !== 'white' && color !== 'black') {
             console.error(this.TAG + "Invalid player color: " + color);
             return;
         }
         console.log(this.TAG + `Switching player to: ${color}`);
-        this.#currentPlayer = color;
+        this.#turn = color;
     }
 
     generateChessboard = () => {
@@ -265,8 +292,8 @@ export class GameStateManager {
         this.checked = null;
         this.PGNTracker.reset({ White: "Player 1", Black: "Player 2" });
 
-        this.#currentPlayer = 'white';
-        this.updateStatus(this.#currentPlayer);
+        this.#turn = 'white';
+        this.updateStatus(this.#turn);
         this.updateAnalysis("");
 
 
@@ -589,7 +616,7 @@ export class GameStateManager {
 
         const piece = fromSquare.piece;
 
-        if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentPlayer) {
+        if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentTurn) {
             // Move the piece (continue)
         } else {
             return; // Do nothing if the move is invalid
@@ -610,9 +637,12 @@ export class GameStateManager {
         this.deselect();
 
         // After Move, switch player. 
-        this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-        this.updateStatus(this.currentPlayer);
+        this.currentTurn = this.currentTurn === 'white' ? 'black' : 'white';
+        this.updateStatus(this.currentTurn);
         this.updateAnalysis(this.PGNTracker.pgn());
+        if (this.playComputer && this.currentTurn !== this.player) {
+            this.computerMove();
+        }
     }
 
     updateStatus(currentPlayer) {
