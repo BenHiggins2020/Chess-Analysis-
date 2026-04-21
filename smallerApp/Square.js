@@ -83,22 +83,32 @@ export class Square {
     }
 
     setupUI() {
-        this.enabled_state = this.UI_ref.style
+        // this.enabled_state = this.UI_ref.style
+        console.log(this.TAG + `Setting up piece UI for `);
+        this.UI_ref.addEventListener('click', () => {
 
-        this.UI_ref.addEventListener('mouseover', () => {
-            this.UI_ref.style.opacity = '0.5';
-            this.UI_ref.style.transition = 'background-color 0.3s, opacity 0.3s';
+
+            console.log(this.TAG + `square clicked: ${this.position} `)
+            // if (this.piece === null || this.piece === "empty") return
+
+            // GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
+            // GameStateManager.getInstance().setSelected(this)
         });
 
-        this.UI_ref.addEventListener('mouseout', () => {
-            this.UI_ref.style.backgroundColor = '';
-            this.UI_ref.style.opacity = '1';
+        // this.UI_ref.addEventListener('mouseover', () => {
+        // this.UI_ref.style.opacity = '0.5';
+        // this.UI_ref.style.transition = 'background-color 0.3s, opacity 0.3s';
+        // });
 
-        });
+        // this.UI_ref.addEventListener('mouseout', () => {
+        // this.UI_ref.style.backgroundColor = '';
+        // this.UI_ref.style.opacity = '1';
+
+        // });
     }
 
     setPiece(piece) {
-        // console.warn(this.TAG + ` setPiece: ${piece.type} to square: ${this.position}`)
+        console.warn(this.TAG + ` setPiece: ${piece.type} to square: ${this.position}`)
 
         if (piece === null || piece === 'empty' || !(piece instanceof Piece)) {
             console.warn(this.TAG + `trying to set null piece. returning. `)
@@ -118,7 +128,7 @@ export class Square {
     }
 
     removePiece() {
-        // console.warn(this.TAG + `Removing piece (${this.piece.type}) from ${this.file}${this.rank}`);
+        console.warn(this.TAG + `Removing piece (${this.piece.type}) from ${this.file}${this.rank}`);
 
         if (this.piece === null || this.piece === 'empty') {
             // console.warn(this.TAG + `No piece to remove from ${this.file}${this.rank}`);
@@ -139,27 +149,35 @@ export class Square {
     setupPieceUI = () => {
         const piece = this.piece.UI_ref;
         let selectedPiece = null; // used for dragging 
+        let cancelMove = false;
         //going to use gamestatemanager for this 
 
         piece.addEventListener('mousedown', (e) => {
+            // let shouldCancel = false;
             // console.log(this.TAG + "Mouse-down event: ", e);
 
             // 1. Make piece ignore mouse so we can detect the square underneath
             selectedPiece = piece;
+
             selectedPiece.style.pointerEvents = 'none';
             selectedPiece.style.position = 'fixed';
             selectedPiece.style.zIndex = '1000';
+
             selectedPiece.classList.add('dragging-now');
 
             // Capture initial offset so piece doesn't "jump" center
             const shiftX = selectedPiece.offsetWidth / 2;
             const shiftY = selectedPiece.offsetHeight / 2;
-            const parentSquare = this.UI_ref;
-            document.body.appendChild(selectedPiece);
-            selectedPiece.style.position = "fixed";
-            selectedPiece.style.zIndex = "10000";
-            selectedPiece.style.left = `${e.clientX - shiftX}px`;
-            selectedPiece.style.top = `${e.clientY - shiftY}px`;
+
+            if (this.piece.color === 'black') {
+                const parentSquare = this.UI_ref;
+                // document.body.appendChild(selectedPiece);
+                selectedPiece.style.position = "fixed";
+                selectedPiece.style.zIndex = "10000";
+                selectedPiece.style.left = `${e.clientX - shiftX}px`;
+                selectedPiece.style.top = `${e.clientY - shiftY}px`;
+
+            }
             const moveAt = (clientX, clientY) => {
                 selectedPiece.style.left = clientX - shiftX + 'px';
                 selectedPiece.style.top = clientY - shiftY + 'px';
@@ -169,16 +187,32 @@ export class Square {
             moveAt(e.clientX, e.clientY);
 
             function onMouseMove(event) {
+
+                if (cancelMove) {
+                    return;
+                    cancelMove = false;
+                }
                 moveAt(event.clientX, event.clientY);
             }
 
-            document.addEventListener('mousemove', onMouseMove);
+            function onRightClick(event) {
 
-            // Use document for mouseup so it triggers even if we release 
-            // the mouse slightly outside the piece boundaries
+                if (selectedPiece !== null) {
+                    event.preventDefault();
+                    cancelMove = true;
+                    selectedPiece.style.left = '';
+                    selectedPiece.style.top = '';
+                    console.log(this.TAG + 'Move canceled');
+                    selectedPiece = null;
+                    document.removeEventListener('mousemove', onMouseMove);
+                }
+            }
+
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('contextmenu', onRightClick);
+
             document.onmouseup = (event) => {
-                // console.log(this.TAG + "Mouse-up event: ", event);
-                // console.log(this.TAG + "Selected piece: ", selectedPiece);
 
                 document.removeEventListener('mousemove', onMouseMove);
 
@@ -188,17 +222,22 @@ export class Square {
                 selectedPiece.style.zIndex = '';
                 selectedPiece.classList.remove('dragging-now');
 
+
                 // 3. Find what is underneath the cursor
                 const elementBelow = document.elementFromPoint(event.clientX, event.clientY);
                 const square = elementBelow?.closest('.light-square, .dark-square');
+                console.log(this.TAG + `Square below cursor: ${square.position}`)
 
-                if (square && selectedPiece != null) {
+                if ((square && selectedPiece != null)) {
                     // console.log("Dropped on:", square.dataset.file, square.dataset.rank);
 
                     const fromCoord = this.file + this.rank;
                     const toCoord = square.dataset.file + square.dataset.rank;
 
+                    if (fromCoord === toCoord) return;
                     console.log(this.TAG + `Attempting move from ${fromCoord} to ${toCoord}`);
+
+                    console.log(this.TAG + `Selected from square (this)`, this);
                     GameStateManager.getInstance().handleMove(fromCoord, toCoord);
                 } else {
                     // Snap back if dropped in the void
@@ -213,14 +252,13 @@ export class Square {
 
         piece.ondragstart = () => false;
 
-        this.UI_ref.addEventListener('click', () => {
+        // this.UI_ref.addEventListener('click', () => {
+        //     console.log(this.TAG + `square clicked: ${this.position} `)
+        //     if (this.piece === null || this.piece === "empty") return
 
-            if (this.piece === null || this.piece === "empty") return
-
-            console.log(this.TAG + `square clicked: ${this.position} w/piece: ${this.piece.type}`)
-            GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
-            GameStateManager.getInstance().setSelected(this)
-        });
+        //     GameStateManager.getInstance().calculateMovesForPieceOnSquare(this)
+        //     GameStateManager.getInstance().setSelected(this)
+        // });
     }
 
     render() {
