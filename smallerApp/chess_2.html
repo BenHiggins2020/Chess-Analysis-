@@ -1,74 +1,68 @@
 <html>
     <head>
         <title>Chess Analysis</title>
+        <!-- Use a local server (e.g. `npm run dev` in this folder) so ES modules, Stockfish worker, and WASM load correctly. -->
         <link rel="stylesheet" href="chess-review-offline.css">
-        <!-- <script  src="chess-review-offline.js"></script> -->
         <script type="module" src="main.js"></script>
-        <link rel = "stylesheet" href="styles.css">
-
+        <link rel="stylesheet" href="styles.css">
     </head>
     <body>
         <div class="container">
-            <div class="colum-left">
+            <div class="column-left">
                 <div class="panel-title">Game</div>
-                
-                <div id="board" class="board"></div>
-                <div>
-                    <p id="status">
-                        White to move.
-                    </p>
 
-                    <button id="reset-btn" class="move-btn"> Reset Board </button>
-                    <button id="prev-move-btn" class="move-btn"> Previous Move </button>
-                    <button id="next-move-btn" class="move-btn"> Next Move </button>
-                    
-                    <div class="btn-container">
-                            <label>
-                                Play as White:
-                                <input type="radio" name="play-as" value="white" checked="true">
-                            </label>
-
-                            <label>
-                                Play as Black:
-                                <input type="radio" name="play-as" value="black">
-                            </label>
-                    </div>
-                    
-                    <div class="btn-container">
-                         <select id="ratingSelect">
-                        <option value="1200">beginner</option>
-                        <option value="1350-1400">1350-1400</option>
-                        <option value="1450-1500">1450-1500</option>
-                        <option value="1550-1600">1550-1600</option>
-                        <option value="1600-1750">1600-1750</option>
-                        <option value="1800+">1800+</option>
-                    </select>
-
-                    <button id="set-lines-btn">Set Stockfish Lines</button>
-
-                    <button id="start-btn">Start</button>
-                    </div>
-                   
-                    
+                <div id="board-wrap" class="board-wrap">
+                    <div id="board" class="board"></div>
                 </div>
-                    
 
+                <p id="chess-status" class="chess-status" aria-live="polite"></p>
 
                 <div class="pgn-container">
-                    <span class="pgn-holder">
-                        <label>
-                            Input Game PGN
-                            <input id="pgn" type="text">
-                        </label>
-                        <button id="load-pgn-btn" class="pgn-load-button"> Load </button>
-                    </span>
+                    <label class="pgn-holder">
+                        FEN
+                        <input id="fen" type="text" placeholder="Paste FEN…" size="80">
+                    </label>
+                    <button id="load-fen-btn" type="button" class="pgn-load-button">Load FEN</button>
+                </div>
+
+                <div class="pgn-container">
+                    <label class="pgn-holder">
+                        Trainer PGN (main line)
+                        <textarea id="pgn" rows="5" cols="72" placeholder="Paste PGN…"></textarea>
+                    </label>
+                    <button id="load-pgn-btn" type="button" class="pgn-load-button">Load trainer PGN</button>
+                </div>
+
+                <div class="pgn-container">
+                    <label class="pgn-holder">
+                        Computer opening PGN (optional)
+                        <textarea id="computer-pgn" rows="4" cols="72" placeholder="Separate line for opponent moves; overrides trainer at each ply when set."></textarea>
+                    </label>
+                    <button id="load-computer-pgn-btn" type="button" class="pgn-load-button">Load computer opening</button>
+                    <button id="clear-computer-pgn-btn" type="button" class="pgn-load-button">Clear computer opening</button>
+                </div>
+
+                <div class="trainer-controls">
+                    <label><input type="radio" name="learner" id="learner-white" value="w" checked> I play White</label>
+                    <label><input type="radio" name="learner" id="learner-black" value="b"> I play Black</label>
+                    <p class="trainer-hint">Black rotates the board; pieces are moved under the cursor correctly.</p>
+                    <label><input type="checkbox" id="strict-opening"> Strict opening line (reject other legal moves; auto-reply from line)</label>
+                </div>
+
+                <div class="trainer-actions">
+                    <button id="undo-btn" type="button">Undo</button>
+                    <button id="reset-btn" type="button">New game</button>
                 </div>
             </div>
-           
-            <div class="column-right">
+
+            <div class="column-middle">
                 <div class="panel-title">Analysis</div>
                 <div class="analysis" id="analysis"></div>
             </div>
-           
+
+            <aside class="column-chat" id="chat-column">
+                <div id="ollama-root"></div>
+            </aside>
         </div>
+    </body>
 </html>

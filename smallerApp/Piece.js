@@ -1,10 +1,3 @@
-import { Square } from "./Square.js";
-import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves, handleKingMoves } from "./MoveHandler.js";
-import { Chessboard } from "./Chessboard.js";
-import { GameStateManager } from "./GameStateManage.js";
-
-
-
 const GLYPHS = {
     K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
     k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
@@ -19,7 +12,7 @@ export class Piece {
         this.type = type; // 'K', 'Q', 'R', 'B', 'N', 'P'
         this.isPinned = false;
         this.isPinning = false;
-        this.chessboard
+        this.chessboard = chessboard;
         if (!GLYPHS[type]) {
             console.error(`Invalid piece type: ${type}`);
         }
@@ -47,8 +40,7 @@ export class Piece {
 
     clearMoves() {
         this.moves.forEach((square) => {
-            // const square = this.chessboard.gameState.get(position)
-            square.hideMoveDot();
+            square.hideMove();
         })
     }
 
@@ -67,50 +59,6 @@ export class Piece {
         this.moves.forEach((square) => {
             square.hideMove();
         })
-    }
-
-    canMoveTo = (fromSquare, toSquare, chessboard) => {
-        // Implement basic move validation logic here based on piece type and chess rules.
-        // This is a complex topic, so you might want to start with simple rules and expand later.
-
-        // Does move check YOUR king?
-        // Option 1. if this move is done, will your king be in check? 
-        // remove piece from square, then check all the opposite team piece,
-        // to see if your king's position is within their moves..
-
-        // Option 2: Check for Pin?? 
-        // When doing a move, by opposite team, if king and other piece are within the move,
-        // set piece parameter to pinned and pinning, reset both on move, while pinning piece is there??? 
-
-
-        // Check Threats:  
-        //will this move threaten the opposite king?
-        GameStateManager.getInstance().checkForThreats(fromSquare);
-
-        switch (this.type.toString()) {
-            case 'P':
-            case 'p':
-                return handlePawnMove(fromSquare, toSquare, this, chessboard);
-            case 'B':
-            case 'b':
-                return handleBishopMove(fromSquare, toSquare);
-            case 'N':
-            case 'n':
-                return handleKnightMove(fromSquare, toSquare);
-            case 'R':
-            case 'r':
-                return handleRookMoves(fromSquare, toSquare);
-            case 'Q':
-            case 'q':
-                return handleQueenMoves(fromSquare, toSquare);
-            case 'K':
-            case 'k':
-                return handleKingMoves(fromSquare, toSquare);
-
-            // Add cases for move piece types
-        }
-
-        // return true; // Placeholder: allow all moves for now
     }
 
     setupUI() {

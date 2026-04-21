@@ -1,73 +1,159 @@
 import { Chessboard } from "./Chessboard.js";
-import { Square } from "./Square.js";
-import { Piece } from "./Piece.js";
-import { GameStateManager } from "./GameStateManage.js"
-import { setStockfishLines } from "./Util/LineToRatingConvert.js";
+import { GameStateManager } from "./GameStateManage.js";
+import {
+    resetEngine,
+    syncBoardTo,
+    loadFen,
+    loadPgnOpening,
+    loadComputerOpeningPgn,
+    clearComputerOpening,
+    undoLast,
+    setLearnerColor,
+    setStrictOpening,
+    getChess,
+    getFen,
+} from "./chessEngine.js";
+import { mountAnalysisPanel } from "./analysis.js";
+import { mountOllamaChat } from "./ollamaChat.js";
 
-console.log("Script")
-const board = document.getElementById("board");
-const gameState = new GameStateManager();
+const boardEl = document.getElementById("board");
+const boardWrap = document.getElementById("board-wrap");
+const statusEl = document.getElementById("chess-status");
+const fenInput = document.getElementById("fen");
+const pgnInput = document.getElementById("pgn");
+const computerPgnInput = document.getElementById("computer-pgn");
+
+function showStatus(message, kind = "info") {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.remove("error");
+    if (kind === "error") {
+        statusEl.classList.add("error");
+    }
+}
+
+document.addEventListener("chessStatus", (e) => {
+    const { message, kind } = e.detail;
+    if (kind === "clear") {
+        showStatus("", "info");
+    } else {
+        showStatus(message, kind);
+    }
+});
+
+function readTrainerOptions() {
+    const b = document.getElementById("learner-black");
+    setLearnerColor(b?.checked ? "b" : "w");
+    const strict = document.getElementById("strict-opening");
+    setStrictOpening(strict?.checked ?? false);
+}
+
+function updateBoardFlip() {
+    const black = document.getElementById("learner-black")?.checked;
+    boardWrap?.classList.toggle("board-wrap--flipped", !!black);
+}
+
+new GameStateManager();
 const game = new Chessboard();
 
+resetEngine();
+syncBoardTo(game);
 
-gameState.GameState.forEach((square, coord) => {
-
-    board.appendChild(square.UI_ref);
-
-})
-
-
-const pgn = document.getElementById("pgn");
-const loadPgnBtn = document.getElementById("load-pgn-btn");
-const analysisOutput = document.getElementById("analysis");
-
-const statusDisplay = document.getElementById("status");
-
-
-const resetBtn = document.getElementById("reset-btn");
-const prevMoveBtn = document.getElementById("prev-move-btn");
-const nextMoveBtn = document.getElementById("next-move-btn");
-
-resetBtn.addEventListener("click", () => {
-    console.log("Resetting board...");
-    gameState.resetBoard();
-    analysisOutput.value = "";
+game.gameState.forEach((square) => {
+    boardEl.appendChild(square.UI_ref);
 });
 
+mountAnalysisPanel(document.getElementById("analysis"));
+mountOllamaChat(document.getElementById("ollama-root"));
 
-const pgnValue = " 1. e4 d5 2. exd5 Qxd5 3. Nc3 (3. Nf3 Bg4 (3... Nc6 4. d4) 4. Be2 Nc6 5. O-O (5. d4 O-O-O) 5... O-O-O 6. Nc3 Qd7 7. b4 Nf6 8. b5 Bxf3 9. Bxf3 Nd4 10. a4 Qf5) ( 3. d4 Nf6 4. Nc3) (3. c4 Qe4+ 4. Qe2 Qxe2+ 5. Bxe2 Nc6) 3... Qa5 (3... Qd8 4. d4 Nf6 5. Nf3 Bg4 6. Bc4 e6 7. O-O Nc6) (3... Qd6 4. d4 Nf6 5. Nf3 a6 6. Be2 Nc6 7. O-O Bf5 8. Be3 O-O-O) 4. d4 (4. Bc4 Nf6 5. Nf3 Bg4 6. O-O e6) (4. b4 Qxb4 5. Rb1 Qd6 6. d4 Nf6 7. g3 Nc6) (4. Nf3 Nf6 5. Bc4 Bg4 6. O-O Nc6) 4... Nf6 5. Nf3 (5. Bd2 c6 6. Nf3 Bg4 7. Bc4 e6 8. O-O Qc7 9. Re1 Be7) 5... Bg4 (5... Bf5 6. Bc4 e6 7. Bd2 c6 8. O-O Qc7 9. Re1 Be7 10. Rc1 Nbd7) 6. h3 Bh5 7. Be2 (7. g4 Bg6 8. Ne5 e6 9. h4) 7... Nc6 8. O-O O-O-O 9. Be3 e5 *";
-const pgnText = pgn.value.trim();
+updateBoardFlip();
+document.dispatchEvent(
+    new CustomEvent("chessPositionChanged", { detail: { fen: getFen() } }),
+);
 
-console.log("Loading PGN:", pgnValue.trim());
-
-const setStockfishLinesBtn = document.getElementById("set-lines-btn");
-
-setStockfishLinesBtn.addEventListener("click", () => {
-    const selectedRating = document.getElementById("ratingSelect").value;
-    try {
-        setStockfishLines(selectedRating);
-    } catch (error) {
-        console.error(error.message);
+document.getElementById("load-fen-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    const fen = fenInput?.value?.trim();
+    if (!fen) {
+        showStatus("Paste a FEN string.", "error");
+        return;
     }
-});
-
-loadPgnBtn.addEventListener("click", () => {
-    const pgnText = pgn.value.trim();
-    if (pgnText) {
-        console.log("Loading PGN:", pgnText);
-        // analysisOutput.value = gameState.parsePGN(pgnText, analysisOutput);
-    } else {
-        console.warn("PGN input is empty.");
+    const r = loadFen(fen);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
     }
+    syncBoardTo(game);
+    showStatus("FEN loaded.", "info");
 });
 
-
-const startBtn = document.getElementById("start-btn");
-
-startBtn.addEventListener("click", () => {
-    console.log("Starting game...");
-    GameStateManager.getInstance().onStart();
-    // analysisOutput.value = gameState.startAnalysis(analysisOutput);
+document.getElementById("load-pgn-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    const pgn = pgnInput?.value?.trim();
+    if (!pgn) {
+        showStatus("Paste a PGN first.", "error");
+        return;
+    }
+    const r = loadPgnOpening(pgn);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
+    }
+    syncBoardTo(game);
+    showStatus(
+        `Trainer PGN loaded (${r.moveCount} half-moves). ${
+            getChess().inCheck() ? "Check." : ""
+        }`,
+        "info",
+    );
 });
 
+document.getElementById("load-computer-pgn-btn")?.addEventListener("click", () => {
+    const pgn = computerPgnInput?.value?.trim();
+    if (!pgn) {
+        showStatus("Paste a computer-opening PGN.", "error");
+        return;
+    }
+    const r = loadComputerOpeningPgn(pgn);
+    if (!r.ok) {
+        showStatus(r.error, "error");
+        return;
+    }
+    showStatus(`Computer opening loaded (${r.moveCount} half-moves).`, "info");
+});
 
+document.getElementById("clear-computer-pgn-btn")?.addEventListener("click", () => {
+    clearComputerOpening();
+    if (computerPgnInput) computerPgnInput.value = "";
+    showStatus("Computer opening cleared.", "info");
+});
+
+document.getElementById("undo-btn")?.addEventListener("click", () => {
+    const r = undoLast();
+    if (!r.ok) {
+        showStatus("Nothing to undo.", "error");
+        return;
+    }
+    syncBoardTo(game);
+    showStatus("Undid one move.", "info");
+});
+
+document.getElementById("reset-btn")?.addEventListener("click", () => {
+    readTrainerOptions();
+    resetEngine();
+    syncBoardTo(game);
+    showStatus("New game.", "info");
+});
+
+["learner-white", "learner-black", "strict-opening"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("change", () => {
+        readTrainerOptions();
+        if (id === "learner-white" || id === "learner-black") {
+            updateBoardFlip();
+        }
+        showStatus(
+            "Trainer options updated. Reload trainer PGN if the auto-prefix should change.",
+            "info",
+        );
+    });
+});

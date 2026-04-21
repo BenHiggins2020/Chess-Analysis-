@@ -1,5 +1,3 @@
-import { GameStateManager } from "./GameStateManage.js";
-import { KingLogicHandler } from "./Handlers/KingLogicHandler.js";
 import { Square } from "./Square.js";
 
 const TAG = "MoveHandler: ";
@@ -121,7 +119,7 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
     const isOneSquareForward = toSquare.file === fromSquare.file && ((piece.color === 'white' && toSquare.rank === fromSquare.rank + 1) || (piece.color === 'black' && toSquare.rank === fromSquare.rank - 1)) && isToSquareEmpty;
     const isTwoSquaresForward = toSquare.file === fromSquare.file && ((piece.color === 'white' && toSquare.rank === fromSquare.rank + 2) || (piece.color === 'black' && toSquare.rank === fromSquare.rank - 2)) && isToSquareEmpty
         && ((piece.color === 'white' && fromSquare.rank === 2) || (piece.color === 'black' && fromSquare.rank === 7)) // Pawns can only move two squares from starting position (rank 2 for white, rank 7 for black)
-        && GameStateManager.getInstance().GameState.get(fromSquare.file + (fromSquare.rank + (piece.color === 'white' ? 1 : -1))).piece === 'empty'; // is the square in front of the pawn empty?
+        && chessboard.gameState.get(fromSquare.file + (fromSquare.rank + (piece.color === 'white' ? 1 : -1))).piece === 'empty'; // is the square in front of the pawn empty?
 
     if (isOneSquareForward) {
         // console.log(TAG + "Pawn can move one square forward to " + toSquare.file + toSquare.rank);
@@ -138,7 +136,7 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
 
 export const calculatePawnMoves = (fromSquare) => {
     const piece = fromSquare.piece;
-    const gameState = GameStateManager.getInstance().GameState;
+    const gameState = fromSquare.chessboard.gameState;
 
     function canDoubleMove(fromSquare) {
         const piece = fromSquare.piece;
@@ -197,7 +195,6 @@ export const calculatePawnMoves = (fromSquare) => {
     let x = fromSquare.file.charCodeAt(0);
     let y = fromSquare.rank;
 
-    // console.log(TAG + `GameState: `, gameState)
     if (canDoubleMove(fromSquare)) {
         const sqr2 = String.fromCharCode(x) + (y + 2);
         moves.push(gameState.get(sqr2));
@@ -300,7 +297,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             // console.log(TAG + `Reached edge of board`);
             return true; // stop if we go out of bounds
         }
-        const sqr = GameStateManager.getInstance().GameState.get(pos)
+        const sqr = chessboard.gameState.get(pos)
         squares.push(sqr)
         if (sqr.piece !== null) {
             // There is a piece on the square, lets include this as the last one. 
@@ -323,7 +320,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             // console.log(TAG + `Reached edge of board`);
             break; // stop if we go out of bounds
         }
-        const sqr = GameStateManager.getInstance().GameState.get(pos)
+        const sqr = chessboard.gameState.get(pos)
         if (sqr.piece === null) {
             // There is a piece on the square, lets include this as the last one. 
             squares.push(sqr)
@@ -358,7 +355,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             // console.log(TAG + `Reached edge of board`);
             break; // stop if we go out of bounds
         }
-        const sqr = GameStateManager.getInstance().GameState.get(pos)
+        const sqr = chessboard.gameState.get(pos)
         // squares.push(sqr)
         // if (sqr.piece !== null) {
         //     // There is a piece on the square, lets include this as the last one. 
@@ -403,7 +400,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             break; // stop if we go out of bounds
         }
 
-        const sqr = GameStateManager.getInstance().GameState.get(pos)
+        const sqr = chessboard.gameState.get(pos)
         // squares.push(sqr)
         // if (sqr.piece !== null) {
         //     // There is a piece on the square, lets include this as the last one. 
@@ -444,7 +441,7 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
             break; // stop if we go out of bounds
         }
 
-        const sqr = GameStateManager.getInstance().GameState.get(pos)
+        const sqr = chessboard.gameState.get(pos)
         // squares.push(sqr)
         // if (sqr.piece !== null) {
         //     // There is a piece on the square, lets include this as the last one. 
@@ -584,7 +581,7 @@ export const calculateKnightMoves = (fromSquare) => {
 
     const moves = []
     movesCoordinates.forEach((sqr) => {
-        const square = GameStateManager.getInstance().GameState.get(sqr)
+        const square = chessboard.gameState.get(sqr)
         moves.push(square);
         // console.log(TAG + `Knight Move Square: `, square)
     });
@@ -603,21 +600,12 @@ export const handleRookMoves = (fromSquare, toSquare) => {
 
             if (toSquare.piece.color !== piece.color) {
                 // console.log(TAG + `selected square, has piece of different color, can move (capture)`)
-                piece.isFirstMove = false;
                 return true;
             } else {
                 console.log(TAG + ``)
                 return false;
             }
-        } else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
-            piece.isFirstMove = false;
-
-            return true;
         }
-        piece.isFirstMove = false;
-        return true;
-    } else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
-        piece.isFirstMove = false;
         return true;
     }
     return false;
@@ -655,7 +643,7 @@ export const calculateRookMoves = (fromSquare) => {
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [right] = ${pos}`);
-        const sqr = GameStateManager.getInstance().GameState.get(pos);
+        const sqr = chessboard.gameState.get(pos);
         squares.push(sqr);
         if (sqr.piece !== null) break; // break once we hit a piece
     }
@@ -672,7 +660,7 @@ export const calculateRookMoves = (fromSquare) => {
         // console.log(TAG + `rook moves left: file = ${file} was ${nxtX}`)
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [left] = ${pos}`);
-        const sqr = GameStateManager.getInstance().GameState.get(pos);
+        const sqr = chessboard.gameState.get(pos);
 
         squares.push(sqr);
         if (sqr.piece !== null) {
@@ -689,7 +677,7 @@ export const calculateRookMoves = (fromSquare) => {
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [down] = ${pos}`);
-        const sqr = GameStateManager.getInstance().GameState.get(pos);
+        const sqr = chessboard.gameState.get(pos);
         squares.push(sqr);
         if (sqr.piece !== null) break;
 
@@ -702,7 +690,7 @@ export const calculateRookMoves = (fromSquare) => {
         const file = String.fromCharCode(nxtX);
         const pos = file + nxtY;
         // console.log(TAG + `nxt square pos [up]= ${pos}`);
-        const sqr = GameStateManager.getInstance().GameState.get(pos);
+        const sqr = chessboard.gameState.get(pos);
         squares.push(sqr);
         if (sqr.piece !== null) break;
     }
@@ -740,78 +728,33 @@ export const calculateQueenMoves = (fromSquare) => {
 export const handleKingMoves = (fromSquare, toSquare) => {
 
     const piece = fromSquare.piece;
-    const gameState = GameStateManager.getInstance().GameState;
+    const gameState = fromSquare.chessboard.gameState;
     const moves = calculateKingMoves(fromSquare);
 
     // Check for threats on square, 
-    const iToDrop = []
-    moves.forEach((sqr) => {
-        if (sqr.piece === undefined) {
-            iToDrop.push(moves.indexOf(sqr));
-        } else {
-            const isThreatened = KingLogicHandler.getInstance().checkForThreatOnSquare(sqr, piece.color);
-            if (isThreatened) {
-                iToDrop.push(moves.indexOf(sqr));
-            }
-        }
 
-    });
-
-    console.log(TAG + `Got count of un-usable squares (for king) ${iToDrop.length}`);
-
-    // iToDrop.forEach((i) => {
-    //     console.log(TAG + `Illegal Move square : ${moves[i].position}`)
-
-    //     moves.splice(i, 1);
-    // });
-
-    console.log(TAG + ``)
 
     if (moves.includes(toSquare)) {
-        console.log(TAG + `Moves includes ${toSquare.position}`)
         // toSquare is within bounded moves
         if (toSquare.piece !== null) {
             // but square has a piece
             if (toSquare.piece.color !== piece.color) {
-                KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
                 return true;
-            } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
-                KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
-                console.log(TAG + ` Passing Castle Move: `)
-
-                return true;
-            }
-            else {
+            } else {
                 // console.log(TAG + `square has piece but it is the same color.`)
                 return false;
             }
         } else { // square is in legal moves and no piece is on that square. 
             //TODO: Check for a threat... 
-            KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
             return true;
         }
-    } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
-        console.log(TAG + ` Passing Castle Move: `)
-        KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
-        return true; // TODO: Need to make two moves at once... this may need to be done manually.
-
-        // const castlingSquares = KingLogicHandler.getInstance().castlingSquares[piece.color];
-        // console.log(TAG + `Checking for attempt to castle to: ${toSquare.position} `, castlingSquares);
-        // if (castlingSquares.castleLong.includes(toSquare.position) || castlingSquares.castleShort.includes(toSquare.position)) {
-        //     KingLogicHandler.getInstance().handleCastling(fromSquare, toSquare);
-        //     return false; // returning false, but sending second. castling request next! 
-        // }
     }
     return false;
 }
 
 export const calculateKingMoves = (fromSquare) => {
-    if (fromSquare.piece == null) {
-        console.error(TAG + `Error: no piece on fromSquare ${fromSquare.position}`);
-        return [];
-    }
     const piece = fromSquare.piece;
-    const gameState = GameStateManager.getInstance().GameState;
+    const gameState = fromSquare.chessboard.gameState;
     // Filter Diagonal moves, that are only 1 file away? 
 
     const x = fromSquare.file.charCodeAt(0);
@@ -890,13 +833,6 @@ export const calculateKingMoves = (fromSquare) => {
     if (validateRank(legalYDown.toString())) {
         const newPos = fromSquare.file + legalYDown;
         moveCoords.push(newPos);
-    }
-
-    //Can Castle
-    if (KingLogicHandler.getInstance().canCastleShort(piece.color)) {
-        moveCoords.push(KingLogicHandler.getInstance().castlingSquares[piece.color].castleShort)
-    } else if (KingLogicHandler.getInstance().canCastleLong(piece.color)) {
-        moveCoords.push(KingLogicHandler.getInstance().castlingSquares[piece.color].castleLong)
     }
 
     const squares = [];
