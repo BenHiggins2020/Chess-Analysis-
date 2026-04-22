@@ -148,104 +148,117 @@ export class Square {
 
     setupPieceUI = () => {
         const piece = this.piece.UI_ref;
-        let selectedPiece = null; // used for dragging 
+        let selectedPiece = null; // used for dragging
+        let originalParent = null; // track the piece's original parent for restoration
         let cancelMove = false;
-        //going to use gamestatemanager for this 
 
         piece.addEventListener('mousedown', (e) => {
-            // let shouldCancel = false;
-            // console.log(this.TAG + "Mouse-down event: ", e);
-
-            // 1. Make piece ignore mouse so we can detect the square underneath
             selectedPiece = piece;
 
-            selectedPiece.style.pointerEvents = 'none';
+            // Step 1: Capture the visual bounding rect BEFORE any DOM/style changes.
+            // getBoundingClientRect() always returns the on-screen position regardless
+            // of CSS transforms on ancestors, so this is correct for both orientations.
+            const rect = selectedPiece.getBoundingClientRect();
+
+            // Compute offset of the cursor relative to the piece's top-left visual corner.
+            // This keeps the piece locked under the cursor while dragging.
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            // Step 2: Reparent the piece to document.body so it escapes the board's
+            // rotate(180deg) transform (used when playing as black). Without this,
+            // position:fixed would still be affected by the CSS transform on the parent,
+            // causing the piece to appear offset below and to the right of the cursor.
+            originalParent = selectedPiece.parentElement;
+            document.body.appendChild(selectedPiece);
+
+            // Step 3: Apply fixed positioning AFTER reparenting.
             selectedPiece.style.position = 'fixed';
             selectedPiece.style.zIndex = '1000';
-
+            selectedPiece.style.pointerEvents = 'none';
+            selectedPiece.style.margin = '0';
+            selectedPiece.style.width = rect.width + 'px';
+            selectedPiece.style.height = rect.height + 'px';
             selectedPiece.classList.add('dragging-now');
 
-            // Capture initial offset so piece doesn't "jump" center
-            const shiftX = selectedPiece.offsetWidth / 2;
-            const shiftY = selectedPiece.offsetHeight / 2;
-
-            if (this.piece.color === 'black') {
-                const parentSquare = this.UI_ref;
-                // document.body.appendChild(selectedPiece);
-                selectedPiece.style.position = "fixed";
-                selectedPiece.style.zIndex = "10000";
-                selectedPiece.style.left = `${e.clientX - shiftX}px`;
-                selectedPiece.style.top = `${e.clientY - shiftY}px`;
-
-            }
             const moveAt = (clientX, clientY) => {
-                selectedPiece.style.left = clientX - shiftX + 'px';
-                selectedPiece.style.top = clientY - shiftY + 'px';
+                selectedPiece.style.left = (clientX - offsetX) + 'px';
+                selectedPiece.style.top = (clientY - offsetY) + 'px';
             };
 
-            // Move it immediately to current cursor
+            // Position immediately under the cursor.
             moveAt(e.clientX, e.clientY);
 
             function onMouseMove(event) {
-
                 if (cancelMove) {
-                    return;
                     cancelMove = false;
+                    return;
                 }
                 moveAt(event.clientX, event.clientY);
             }
 
             function onRightClick(event) {
-
                 if (selectedPiece !== null) {
                     event.preventDefault();
                     cancelMove = true;
-                    selectedPiece.style.left = '';
-                    selectedPiece.style.top = '';
-                    console.log(this.TAG + 'Move canceled');
+                    // Restore piece to its original square.
+                    if (originalParent) {
+                        selectedPiece.style.position = '';
+                        selectedPiece.style.zIndex = '';
+                        selectedPiece.style.left = '';
+                        selectedPiece.style.top = '';
+                        selectedPiece.style.margin = '';
+                        selectedPiece.style.width = '';
+                        selectedPiece.style.height = '';
+                        selectedPiece.style.pointerEvents = '';
+                        selectedPiece.classList.remove('dragging-now');
+                        originalParent.appendChild(selectedPiece);
+                        originalParent = null;
+                    }
                     selectedPiece = null;
                     document.removeEventListener('mousemove', onMouseMove);
                 }
             }
 
-
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('contextmenu', onRightClick);
 
             document.onmouseup = (event) => {
-
                 document.removeEventListener('mousemove', onMouseMove);
 
-                // 2. IMPORTANT: Re-enable pointer events so it can be grabbed again
-                selectedPiece.style.pointerEvents = 'auto';
-                selectedPiece.style.position = '';
-                selectedPiece.style.zIndex = '';
-                selectedPiece.classList.remove('dragging-now');
-
-
-                // 3. Find what is underneath the cursor
+                // Find what square is under the cursor BEFORE clearing fixed position.
                 const elementBelow = document.elementFromPoint(event.clientX, event.clientY);
                 const square = elementBelow?.closest('.light-square, .dark-square');
-                console.log(this.TAG + `Square below cursor: ${square.position}`)
 
-                if ((square && selectedPiece != null)) {
-                    // console.log("Dropped on:", square.dataset.file, square.dataset.rank);
+                // Reset all drag styles.
+                selectedPiece.style.position = '';
+                selectedPiece.style.zIndex = '';
+                selectedPiece.style.left = '';
+                selectedPiece.style.top = '';
+                selectedPiece.style.margin = '';
+                selectedPiece.style.width = '';
+                selectedPiece.style.height = '';
+                selectedPiece.style.pointerEvents = '';
+                selectedPiece.classList.remove('dragging-now');
 
+                // Restore the piece to its original parent square before the move logic
+                // runs, so the DOM is in a consistent state for setPiece/removePiece.
+                if (originalParent) {
+                    originalParent.appendChild(selectedPiece);
+                    originalParent = null;
+                }
+
+                if (square && selectedPiece != null) {
                     const fromCoord = this.file + this.rank;
                     const toCoord = square.dataset.file + square.dataset.rank;
 
-                    if (fromCoord === toCoord) return;
-                    console.log(this.TAG + `Attempting move from ${fromCoord} to ${toCoord}`);
-
-                    console.log(this.TAG + `Selected from square (this)`, this);
-                    GameStateManager.getInstance().handleMove(fromCoord, toCoord);
-                } else {
-                    // Snap back if dropped in the void
-                    selectedPiece.style.left = '';
-                    selectedPiece.style.top = '';
+                    if (fromCoord !== toCoord) {
+                        console.log(this.TAG + `Attempting move from ${fromCoord} to ${toCoord}`);
+                        GameStateManager.getInstance().handleMove(fromCoord, toCoord);
+                    }
                 }
-                selectedPiece = null;
 
+                selectedPiece = null;
                 document.onmouseup = null;
             };
         });
