@@ -1,5 +1,8 @@
 import { GameStateManager } from "./GameStateManage.js";
 import { KingLogicHandler } from "./Handlers/KingLogicHandler.js";
+import { PawnLogicHandler } from "./Handlers/PawnLogicHandler.js";
+import { BishopLogicHandler } from "./Handlers/BishopLogicHandler.js";
+import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 import { Square } from "./Square.js";
 
 const TAG = "MoveHandler: ";
@@ -39,6 +42,8 @@ const validateRank = (rank) => {
 
 export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
 
+    return PawnLogicHandler.getInstance().handlePawnMove(fromSquare, toSquare);
+    fromSquare.piece
     // Pawns can Move Straight Forward or Capture Diagonally: 
     const isStraightMove = fromSquare.file === toSquare.file;
     const isForwardMove = (piece.color === 'white' && toSquare.rank > fromSquare.rank) || (piece.color === 'black' && toSquare.rank < fromSquare.rank);
@@ -83,17 +88,31 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
                 return false;
             }
         }
+    } else {
+        // is a capture move
     }
 
 
     // To Capture pawns must move up one rank, and over one file (diagonally), and the target square must be occupied by an opponent's piece.
     const isDiagonalMove = fromSquare.file !== toSquare.file;
-    const fileDiff = Math.abs(fromSquare.file.charCodeAt(0) - toSquare.file.charCodeAt(0));
-    const rankDiff = Math.abs(fromSquare.rank - toSquare.rank);
+
+    const fileCode = fromSquare.file.charCodeAt(0);
+    const allowedFiles = [String.fromCharCode(fileCode - 1), String.fromCharCode(fileCode + 1)]
+    const allowedRank = piece.color === "white" ? fromSquare.rank + 1 : fromSquare.rank - 1;
+
+    console.log(TAG + `Allowed files for pawn to move: `, allowedFiles)
+    console.log(TAG + `Allowed Ranks for pawn to move: `, allowedRank)
+
+    const fileDiff = fromSquare.file.charCodeAt(0) - toSquare.file.charCodeAt(0);
+    const rankDiff = fromSquare.rank - toSquare.rank;
 
     console.log(TAG + `Checking pawn move from ${fromSquare.file}${fromSquare.rank} to ${toSquare.file}${toSquare.rank} | fileDiff: ${fileDiff} rankDiff: ${rankDiff} isDiagonalMove: ${isDiagonalMove}`);
+
+
+
     if (isDiagonalMove) {
-        if (fileDiff === 1 && rankDiff === 1) {
+        // can change file left of right by 1, but can only move UP a rank
+        if ((fileDiff === 1 || fileDiff === -1) && rankDiff === 1) {
             console.error(TAG + "Invalid move: Pawns can only capture one square diagonally.");
             if (!isToSquareEmpty && toSquare.piece.color !== piece.color) { // Square is not empty, and has a different color piece (opponent's piece) on it, so the pawn can capture
                 return true;
@@ -102,6 +121,9 @@ export const handlePawnMove = (fromSquare, toSquare, piece, chessboard) => {
                 return false;
             }
 
+        } else {
+            // Cannot have a move diagonally, 
+            return false;
         }
     }
 
@@ -219,15 +241,17 @@ export const calculatePawnMoves = (fromSquare) => {
         // console.log(TAG + `sqr: ${sqr.position}`)
     })
 
-    piece.moves = moves;
+    // piece.moves = moves;
     return moves;
 }
 
 export const handleBishopMove = (fromSquare, toSquare) => {
     try {
-        calculateBishopPath(fromSquare, toSquare);
+        const moves = calculateBishopPath(fromSquare, toSquare);
 
         const piece = fromSquare.piece;
+        piece.moves = moves;
+
         const chessboard = fromSquare.chessboard;
         const isNormalMove = toSquare.piece === null;
 
@@ -467,7 +491,10 @@ export const calculateBishopPath = (fromSquare, toSquare) => {
     // } else {
     //     console.log(`Pieces are pinned!! `)
     // }
-    selectedPiece.moves = squares;
+
+    // TODO : refactor so that moves are set at specific times not automatically. 
+    // This way we can use the returned moves as hypotheticals. 
+    // selectedPiece.moves = squares;
     return allSquares;
 }
 
@@ -478,6 +505,7 @@ export const handleKnightMove = (fromSquare, toSquare) => {
     const moves = calculateKnightMoves(fromSquare)
     fromSquare.piece.moves
     const piece = fromSquare.piece;
+    piece.moves = moves;
 
 
     if (moves.includes(toSquare)) { // is legal move,
@@ -589,13 +617,15 @@ export const calculateKnightMoves = (fromSquare) => {
         // console.log(TAG + `Knight Move Square: `, square)
     });
 
-    selectedPiece.moves = moves;
+    // selectedPiece.moves = moves;
     return moves;
 }
 
 export const handleRookMoves = (fromSquare, toSquare) => {
     const piece = fromSquare.piece
     const moves = calculateRookMoves(fromSquare);
+    piece.moves = moves;
+
 
     if (moves.includes(toSquare)) {
         // console.log(TAG + `moves includes selected square`)
@@ -609,11 +639,12 @@ export const handleRookMoves = (fromSquare, toSquare) => {
                 console.log(TAG + ``)
                 return false;
             }
-        } else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
-            piece.isFirstMove = false;
-
-            return true;
         }
+        //  else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
+        //     piece.isFirstMove = false;
+
+        //     return true;
+        // }
         piece.isFirstMove = false;
         return true;
     } else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
@@ -710,30 +741,39 @@ export const calculateRookMoves = (fromSquare) => {
     squares.forEach((square) => {
         // console.log(`Squares for rook: ${square.position}`);
     })
-    piece.moves = squares
+    // piece.moves = squares
     return squares
 
 }
 
 export const handleQueenMoves = (fromSquare, toSquare) => {
-
+    console.log(TAG + `handleQueenMoves `)
     if (toSquare.piece !== null) {
         if (toSquare.piece.color === fromSquare.piece.color) return false;
     }
+    const moves = calculateQueenMoves(fromSquare, toSquare);
+
     const canMoveDiagonal = handleBishopMove(fromSquare, toSquare);
     const canMoveStraight = handleRookMoves(fromSquare, toSquare);
+    fromSquare.piece.moves = moves;
+
     // console.log(TAG + `Can move diagonal ${canMoveDiagonal} straight: ${canMoveStraight}`)
     return canMoveDiagonal || canMoveStraight;
 }
 
 export const calculateQueenMoves = (fromSquare) => {
     const piece = fromSquare.piece;
-    const diagonalMoves = calculateBishopPath(fromSquare);
-    const rookMoves = calculateRookMoves(fromSquare);
+    const diagonalMoves = BishopLogicHandler.calculateBishopMovesForSquare(fromSquare);
+    console.log(TAG + `Got bishop moves: ${diagonalMoves.length}`);
+    const rookMoves = RookLogicHandler.calculateRookMovesForSquare(fromSquare);
+    console.log(TAG + `Got rook moves: ${rookMoves.length}`);
+
     const moves = []
     moves.push(...diagonalMoves);
     moves.push(...rookMoves);
-    piece.moves = moves;
+    const moveCoords = moves.map((sqr) => { sqr.position })
+    console.log(TAG + ` queen move coordinates:\n`, moveCoords);
+    // piece.moves = moves;
     return moves;
 }
 
@@ -742,7 +782,7 @@ export const handleKingMoves = (fromSquare, toSquare) => {
     const piece = fromSquare.piece;
     const gameState = GameStateManager.getInstance().GameState;
     const moves = calculateKingMoves(fromSquare);
-
+    piece.moves = moves;
     // Check for threats on square, 
     const iToDrop = []
     moves.forEach((sqr) => {
@@ -907,7 +947,7 @@ export const calculateKingMoves = (fromSquare) => {
         squares.push(sqr)
     });
 
-    piece.moves = squares;
+    // piece.moves = squares;
 
     return squares;
 }

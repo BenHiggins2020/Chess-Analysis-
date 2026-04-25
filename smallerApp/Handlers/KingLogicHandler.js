@@ -1,4 +1,5 @@
 import { GameStateManager } from "../GameStateManage.js";
+import { Square } from "../Square.js";
 
 export class KingLogicHandler {
     static #instance = null;
@@ -15,11 +16,14 @@ export class KingLogicHandler {
         this.hasWhiteKingMoved = false;
         this.hasWhiteKingSideRookMoved = false;
         this.hasWhiteQueenSideRookMoved = false;
+        this.whiteKingCheck = false;
+        this.whiteKingPos = "e1";
 
         this.hasBlackKingMoved = false;
         this.hasBlackKingSideMoved = false;
         this.hasBlackQueenSideMoved = false;
-
+        this.blackKingCheck = false;
+        this.blackKingPos = "e8";
 
         KingLogicHandler.#instance = this;
 
@@ -61,9 +65,12 @@ export class KingLogicHandler {
         }
         if (piece.color === 'white') {
             this.hasWhiteKingMoved = true;
+            this.whiteKingPos = toSquare.position;
             console.log(this.TAG + `White king has moved. hasWhiteKingMoved set to true.`);
         } else if (piece.color === 'black') {
             this.hasBlackKingMoved = true;
+            this.blackKingPos = toSquare.position;
+
             console.log(this.TAG + `Black king has moved. hasBlackKingMoved set to true.`);
         }
     }
@@ -222,15 +229,20 @@ export class KingLogicHandler {
             case "white":
                 if (this.castlingSquares.white.castleShort.includes(toSquare.position)) {
                     this.casteShortWhite();
+                    this.whiteKingPos = "g1"
                 } else {
                     this.castleLongWhite();
+                    this.whiteKingPos = "c1"
+
                 }
                 break;
             case "black":
                 if (this.castlingSquares.black.castleShort.includes(toSquare.position)) {
                     this.casteShortBlack();
+                    this.blackKingPos = "g8";
                 } else {
                     this.castleLongBlack();
+                    this.blackKingPos = "c8";
                 }
                 break;
         }
@@ -349,6 +361,14 @@ export class KingLogicHandler {
     }
 
 
+    /**
+     * Checks each square for a piece of opposite color to the king.
+     * Then checks if it has moves which would include the king's target square. 
+     * 
+     * @param {Square} square this is the square that is under attack by another piece.
+     * @param {String} kingColor color of the king being attacked. 
+     * @returns false for no threats, true if a threat is found.  
+     */
     checkForThreatOnSquare = (square, kingColor) => {
         // Check if the square is under attack by any opponent piece
         // This would involve checking all opponent pieces and their legal moves to see if any can move to this square.

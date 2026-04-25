@@ -154,6 +154,7 @@ export class Square {
 
         piece.addEventListener('mousedown', (e) => {
             selectedPiece = piece;
+            originalParent = this;
 
             // Step 1: Capture the visual bounding rect BEFORE any DOM/style changes.
             // getBoundingClientRect() always returns the on-screen position regardless
@@ -169,8 +170,8 @@ export class Square {
             // rotate(180deg) transform (used when playing as black). Without this,
             // position:fixed would still be affected by the CSS transform on the parent,
             // causing the piece to appear offset below and to the right of the cursor.
-            originalParent = selectedPiece.parentElement;
-            document.body.appendChild(selectedPiece);
+            // originalParent = selectedPiece.parentElement; // Why cant this just be 'this' (square)
+            // document.body.appendChild(selectedPiece);
 
             // Step 3: Apply fixed positioning AFTER reparenting.
             selectedPiece.style.position = 'fixed';
@@ -212,8 +213,8 @@ export class Square {
                         selectedPiece.style.height = '';
                         selectedPiece.style.pointerEvents = '';
                         selectedPiece.classList.remove('dragging-now');
-                        originalParent.appendChild(selectedPiece);
-                        originalParent = null;
+                        // originalParent.UI_ref.appendChild(selectedPiece);
+                        // originalParent = null;
                     }
                     selectedPiece = null;
                     document.removeEventListener('mousemove', onMouseMove);
@@ -244,8 +245,8 @@ export class Square {
                 // Restore the piece to its original parent square before the move logic
                 // runs, so the DOM is in a consistent state for setPiece/removePiece.
                 if (originalParent) {
-                    originalParent.appendChild(selectedPiece);
-                    originalParent = null;
+                    // originalParent.appendChild(selectedPiece);
+                    // originalParent = null;
                 }
 
                 if (square && selectedPiece != null) {

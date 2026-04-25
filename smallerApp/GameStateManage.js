@@ -6,6 +6,9 @@ import { ClaudePGNParser } from "./Util/claudePgnParser.js";
 import { createPGNTracker } from "./Util/PGNWriter.js";
 import { createStockfish } from "./Repository/StockfishApi.js";
 import { KingLogicHandler } from "./Handlers/KingLogicHandler.js";
+import { PawnLogicHandler } from "./Handlers/PawnLogicHandler.js";
+import { BishopLogicHandler, } from "./Handlers/BishopLogicHandler.js";
+import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -15,7 +18,7 @@ export class GameStateManager {
 
 
     constructor(name) {
-        this.playComputer = true;
+        this.playComputer = false;
         this.TAG = "GameStateManager: "
         if (GameStateManager.#instance) {
             throw new Error("Use getInstance")
@@ -286,10 +289,10 @@ export class GameStateManager {
         this.clearPieces();
         this.setPieces();
         // clear fen and pgn
-        this.whiteKingMoves = [];
-        this.whiteKingPos = 'e1';
-        this.blackKingMoves = [];
-        this.blackKingPos = 'e8';
+        // this.whiteKingMoves = [];
+        // this.whiteKingPos = 'e1';
+        // this.blackKingMoves = [];
+        // this.blackKingPos = 'e8';
         this.checked = null;
         this.PGNTracker.reset({ White: "Player 1", Black: "Player 2" });
 
@@ -300,6 +303,7 @@ export class GameStateManager {
 
     }
 
+    // Todo replace this with KingLogicHandler... 
     updateKingSquares(square) {
         //square is the new square the king is on... 
         const kingMoves = []
@@ -323,21 +327,41 @@ export class GameStateManager {
 
     // After a move, check if it threatens king.
     // the square paramter should be for a new piece...  
-    checkForThreats(square) {
+    /**
+     *  Takes the square of an opponent piece, and checks whether or not it will check the king. 
+     * This should be able to be done pre-emptively... 
+     * @param {Square} square position of Opposite color.  
+     * @param {Piece} piece which we are checking could be threatening. 
+     */
+    checkForThreats(square, threateningPiece) {
+        let piece = threateningPiece !== null ? threateningPiece : square.piece;
+        console.log(this.TAG + `Checking for Threats from ${piece.type} ${square.position}
+             w/ ${piece.color} ${piece.type}`);
 
         // Check if the piece on this square threatens the opposite king? 
         // Threatens means, that the piece can move to a square that the king can also move (or is on). 
         // Take moves away from the king. 
         // Check if the king is in Check. 
 
-        const moves = this.calculateMovesForPieceOnSquare(square); // attacking piece moves from square... 
+        const moves = this.calculateMovesForPieceOnSquare(square, piece); // attacking piece moves from square...
         // console.log(this.TAG + `moves =  `, moves);
+        let kingSquare = null;
 
-        switch (square.piece.color) {
+        if (moves === undefined) {
+            console.log(this.TAG + `Moves were undefined! just going to return for now... `);
+            return;
+        }
+
+        switch (piece.color) {
             case 'black':
                 // console.log(this.TAG + ` Black's ${square.piece.type} on ${square.position} `)
 
-                const kingSquare = this.#gameState.get(this.whiteKingPos)
+                kingSquare = this.#gameState.get(KingLogicHandler.getInstance().whiteKingPos);
+
+                const kingThreat = KingLogicHandler.getInstance().checkForThreatOnSquare(kingSquare, "white");
+
+                let movesCoords = moves.map((sqr) => sqr.position);
+                console.log(this.TAG + `movesCoords =  `, movesCoords);
                 if (moves.includes(
                     (kingSquare)
                 )) {
@@ -347,36 +371,41 @@ export class GameStateManager {
                 }
 
                 // Calculate the moves for king. 
-                this.whiteKingMoves = calculateKingMoves(this.#gameState.get(this.whiteKingPos));
-                const initialWhiteKingMovesCount = this.whiteKingMoves.length;
+                let whiteKingMoves = this.calculateMovesForPieceOnSquare(kingSquare);
+                const initialWhiteKingMovesCount = whiteKingMoves.length;
 
-                this.whiteKingMoves.forEach((sqr) => {
+                whiteKingMoves.forEach((sqr) => {
 
                     // console.log(this.TAG + `checking white king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
 
                     if (moves.includes(sqr)) {
                         // console.log(this.TAG + `removing white king move: ${sqr.position} from legal moves, because it is threatened by piece on ${square.position}`)
-                        this.whiteKingMoves = this.whiteKingMoves.filter((value, index, moves) => {
+                        whiteKingMoves = whiteKingMoves.filter((value, index, moves) => {
                             !moves.includes(value)
                         })
                     }
                 })
 
-                this.#gameState.get(this.whiteKingPos).piece.moves = this.whiteKingMoves; // update the king moves in the piece object.
+                kingSquare.moves = whiteKingMoves; // update the king moves in the piece object.
                 // console.log(this.TAG + `filtered white king moves: ${this.whiteKingMoves.length} of ${initialWhiteKingMovesCount}`)
 
                 // check for threats 
                 break;
+
             case 'white':
+
+                kingSquare = this.#gameState.get(KingLogicHandler.getInstance().blackKingPos);
+                let blackKingMoves = this.calculateMovesForPieceOnSquare(kingSquare);
+
                 // console.log(this.TAG + ` White's ${square.piece.type} on ${square.position} `)
-                if (moves.includes((this.#gameState.get(this.blackKingMoves)))) {
+                if (moves.includes((this.#gameState.get(blackKingMoves)))) {
                     // Check!!
                     console.warn(this.TAG + ` CHECK!!! `)
                     this.setChecked('black');
                 }
-                this.blackKingMoves = calculateKingMoves(this.#gameState.get(this.blackKingPos));
+                // blackKingMoves = this.calculateMovesForPieceOnSquare(this.#gameState.get(KingLogicHandler.getInstance().blackKingPos));
                 const initialBlackKingMovesCount = this.blackKingMoves.length;
-                this.blackKingMoves.forEach((sqr) => {
+                blackKingMoves.forEach((sqr) => {
 
                     // console.log(this.TAG + `checking black king move: ${sqr.position} against list of Checking piece moves: ${moves.includes(sqr)}`)
 
@@ -399,30 +428,43 @@ export class GameStateManager {
         }
     }
 
-    calculateMovesForPieceOnSquare(square) {
+    calculateMovesForPieceOnSquare(square, calculatingForPiece = null) {
+        let piece = square.piece;
+
+        if (calculatingForPiece === null) {
+            // continue, we are just checking the moves for a piece that is already on the square (fromSquare)
+            // piece = square.piece
+            console.log(this.TAG + `calculating Moves... got: `, piece)
+        } else {
+            console.warn(this.TAG + `calculating (future?) moves for piece ${calculatingForPiece.type} on at position: ${square.position}`)
+            piece = calculatingForPiece;
+        }
+
         let moves = []
-        switch (square.piece.type.toString().toUpperCase()) {
+        switch (piece.type.toString().toUpperCase()) {
             case "P":
-                moves = calculatePawnMoves(square);
+                moves = PawnLogicHandler.getInstance().getLegalPawnMoves(square, null);
+                // moves = calculatePawnMoves(square);//PawnLogicHandler.getInstance().getLegalPawnMoves(square, null);
+
                 // console.log(this.TAG + `moves: ${moves} `, result)
                 break;
             case "K":
                 moves = calculateKingMoves(square);
                 break;
             case "B":
-                moves = calculateBishopPath(square);
+                moves = BishopLogicHandler.calculateBishopMovesForSquare(square);
                 break;
             case "Q":
                 moves = calculateQueenMoves(square);
                 break;
             case "R":
-                moves = calculateRookMoves(square);
+                moves = RookLogicHandler.calculateRookMovesForSquare(square);
                 break;
             case "N":
                 moves = calculateKnightMoves(square);
                 break;
         }
-        // console.log(this.TAG + `calculated moves: ${moves.length}`)
+        console.log(this.TAG + `calculated moves: ${moves.length} for ${piece.type}`)
         return moves;
     }
 
@@ -582,26 +624,15 @@ export class GameStateManager {
 
     handleMove = (fromCoord, toCoord) => {
 
-        //// Castling — just push the king's from and to squares, it auto-detects
-        // handleMove('e1', 'g1'); // → O-O
-        // handleMove('e1', 'c1'); // → O-O-O
-
-
-        // console.log(this.TAG + `CONVERT MOVE TO PGN`, PGNParserUtil.convertPositionsToPGNMove(fromCoord, toCoord));
         if (fromCoord === toCoord) {
             // console.error(this.TAG + "Cannot move to the same square: " + fromCoord);
             return;
         }
 
-        // document.getElementById("analysis").textContent = pgnTracker.pgn;
-
-
 
         const fromSquare = this.#gameState.get(fromCoord);
         let toSquare = this.#gameState.get(toCoord);
         console.log(this.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
-        // console.log(this.TAG + `fromSquare: `, fromSquare);
-        // console.log(this.TAG + `toSquare: `, toSquare);
 
         if (!fromSquare || !toSquare) {
             console.error(this.TAG + `Invalid move from ${fromSquare} to ${toSquare}`);
@@ -611,6 +642,7 @@ export class GameStateManager {
         const piece = fromSquare.piece;
 
         if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentTurn) {
+            // this.checkForThreats(toSquare, piece);
             if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
                 // update toSquare to correctly castle
                 const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(fromSquare, toSquare);

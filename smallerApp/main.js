@@ -3,11 +3,19 @@ import { Square } from "./Square.js";
 import { Piece } from "./Piece.js";
 import { GameStateManager } from "./GameStateManage.js"
 import { setStockfishLines } from "./Util/LineToRatingConvert.js";
+import { BoardLogicHandler } from "./Handlers/BoardLogicHandler.js";
+import { BishopLogicHandler } from "./Handlers/BishopLogicHandler.js";
+import { KnighLogicHandler } from "./Handlers/KnightLogicHandler.js";
+import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 
 console.log("Script")
 const board = document.getElementById("board");
 const gameState = new GameStateManager();
 const game = new Chessboard();
+const boardLogicHandler = new BoardLogicHandler();
+const bishopLogicHandler = new BishopLogicHandler();
+const knightLH = new KnighLogicHandler();
+const rookLH = new RookLogicHandler();
 
 
 gameState.GameState.forEach((square, coord) => {

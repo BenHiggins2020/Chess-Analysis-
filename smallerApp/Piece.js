@@ -2,6 +2,7 @@ import { Square } from "./Square.js";
 import { handlePawnMove, handleBishopMove, handleKnightMove, handleRookMoves, handleQueenMoves, handleKingMoves } from "./MoveHandler.js";
 import { Chessboard } from "./Chessboard.js";
 import { GameStateManager } from "./GameStateManage.js";
+import { PawnLogicHandler } from "./Handlers/PawnLogicHandler.js";
 
 
 
@@ -19,7 +20,8 @@ export class Piece {
         this.type = type; // 'K', 'Q', 'R', 'B', 'N', 'P'
         this.isPinned = false;
         this.isPinning = false;
-        this.chessboard
+        this.chessboard;
+        this.hasMoved = false;
         if (!GLYPHS[type]) {
             console.error(`Invalid piece type: ${type}`);
         }
@@ -85,12 +87,14 @@ export class Piece {
 
         // Check Threats:  
         //will this move threaten the opposite king?
-        GameStateManager.getInstance().checkForThreats(fromSquare);
+        const piece = fromSquare.piece
+        const color = piece.color === "white" ? "white" : "black"
+        GameStateManager.getInstance().checkForThreats(fromSquare, piece);
 
         switch (this.type.toString()) {
             case 'P':
             case 'p':
-                return handlePawnMove(fromSquare, toSquare, this, chessboard);
+                return PawnLogicHandler.getInstance().handlePawnMove(fromSquare, toSquare);
             case 'B':
             case 'b':
                 return handleBishopMove(fromSquare, toSquare);
