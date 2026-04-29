@@ -20,7 +20,7 @@ export class BishopLogicHandler {
         return BishopLogicHandler.#instance;
     }
 
-    static calculateBishopMovesForSquare(fromSquare) {
+    static calculateBishopMovesForSquare(fromSquare, color = null) {
         console.log(this.TAG + ` Calculating bishop moves on square ${fromSquare.position}`)
         const moves = [];
         let xMin = "a".charCodeAt(0) // x = 1 for file 'a'
@@ -41,22 +41,8 @@ export class BishopLogicHandler {
         const upDiagR = filesRight.map((file) => {
             // console.log(this.TAG + `checking position: ${file}${rank + 1}`);
             rank += 1
-            if (foundPiece) return undefined;
-            if (!BoardLogicHandler.validateRank(rank)) {
-                // console.log(this.TAG + `Do nothing! its an invalid rank/position  ${file}${rank} `)
-                return undefined;
-            }
-
-            const pos = file + rank;
-            if (!BoardLogicHandler.isSquareEmpty(pos)) {
-                foundPiece = true; // this is the last square to include in row!;
-
-                // Only include it if square is opposite color: 
-                const sqr = GameStateManager.getInstance().getSquare(pos);
-                //
-            }
-            // console.log(this.TAG + `returning position! ${file}${rank} `)
-            return pos;
+            const { pos, foundPiece2 } = this.addPositionCheck(file, rank, foundPiece, color);
+            console.log(this.TAG + `addPiece worked: ${pos} ${foundPiece2} ...`);
 
         }).filter((pos) => {
             return pos !== undefined;
@@ -110,7 +96,7 @@ export class BishopLogicHandler {
                 foundPiece = true; // this is the last square to include in row!;
 
                 // Only include it if square is opposite color: 
-                const sqr = GameStateManager.getInstance().getSquare(pos);
+                const sqr = GameStateMaadager.getInstance().getSquare(pos);
                 //
             }
             // console.log(this.TAG + `returning position! ${file}${rank} `)
@@ -154,6 +140,27 @@ export class BishopLogicHandler {
         console.log(this.TAG + `Calculated Bishop moves: ${moves.length} \n`, moves);
         return moves;
 
+    }
+
+    static addPositionCheck = (file, rank, foundPieceOriginal, color) => {
+        let foundPiece = foundPieceOriginal;
+        if (foundPiece) return undefined;
+        if (!BoardLogicHandler.validateRank(rank)) {
+            // console.log(this.TAG + `Do nothing! its an invalid rank/position  ${file}${rank} `)
+            return undefined;
+        }
+
+        const pos = file + rank;
+        if (!BoardLogicHandler.isSquareEmpty(pos)) {
+            console.log(this.TAG + `Square is not empty. at ${pos}`)
+            foundPiece = true; // this is the last square to include in row!;
+
+            if (color !== null) {
+                const sqr = GameStateManager.getInstance().getSquare(pos);
+                if (sqr.piece.color === color) return undefined; // Only include it if square is opposite color: 
+            }
+        }
+        return { pos, foundPiece };
     }
 
     /**

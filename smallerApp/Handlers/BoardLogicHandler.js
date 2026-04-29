@@ -48,6 +48,12 @@ export class BoardLogicHandler {
         return toSquare.piece === undefined || toSquare.piece === null;
     }
 
+    static isPositionEmpty = (pos) => {
+        if (pos === null) return false;
+        const toSquare = GameStateManager.getInstance().getSquare(pos);
+        return toSquare.piece === undefined || toSquare.piece === null;
+    }
+
 
     /**
      * Before moving piece from one square to another, check if this move will result in a check against a king. 

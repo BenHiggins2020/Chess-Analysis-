@@ -763,9 +763,9 @@ export const handleQueenMoves = (fromSquare, toSquare) => {
 
 export const calculateQueenMoves = (fromSquare) => {
     const piece = fromSquare.piece;
-    const diagonalMoves = BishopLogicHandler.calculateBishopMovesForSquare(fromSquare);
+    const diagonalMoves = BishopLogicHandler.calculateBishopMovesForSquare(fromSquare, piece.color);
     console.log(TAG + `Got bishop moves: ${diagonalMoves.length}`);
-    const rookMoves = RookLogicHandler.calculateRookMovesForSquare(fromSquare);
+    const rookMoves = RookLogicHandler.calculateRookMovesForSquare(fromSquare, piece.color);
     console.log(TAG + `Got rook moves: ${rookMoves.length}`);
 
     const moves = []

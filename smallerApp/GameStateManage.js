@@ -18,7 +18,7 @@ export class GameStateManager {
 
 
     constructor(name) {
-        this.playComputer = false;
+        this.playComputer = true;
         this.TAG = "GameStateManager: "
         if (GameStateManager.#instance) {
             throw new Error("Use getInstance")
