@@ -343,8 +343,8 @@ export class GameStateManager {
         // Take moves away from the king. 
         // Check if the king is in Check. 
 
-        const moves = this.calculateMovesForPieceOnSquare(square, piece); // attacking piece moves from square...
-        // console.log(this.TAG + `moves =  `, moves);
+        let moves = this.calculateMovesForPieceOnSquare(square, piece).filter((sqr) => { return sqr !== undefined }); // attacking piece moves from square...
+        console.log(this.TAG + `moves =  `, moves);
         let kingSquare = null;
 
         if (moves === undefined) {
@@ -359,8 +359,8 @@ export class GameStateManager {
                 kingSquare = this.#gameState.get(KingLogicHandler.getInstance().whiteKingPos);
 
                 const kingThreat = KingLogicHandler.getInstance().checkForThreatOnSquare(kingSquare, "white");
-
-                let movesCoords = moves.map((sqr) => sqr.position);
+                console.log(this.TAG + `moves : ${moves.length}`, moves)
+                let movesCoords = moves.map((sqr) => { sqr.position });
                 console.log(this.TAG + `movesCoords =  `, movesCoords);
                 if (moves.includes(
                     (kingSquare)

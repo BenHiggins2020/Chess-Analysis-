@@ -612,10 +612,15 @@ export const calculateKnightMoves = (fromSquare) => {
 
     const moves = []
     movesCoordinates.forEach((sqr) => {
-        const square = GameStateManager.getInstance().GameState.get(sqr)
-        moves.push(square);
-        // console.log(TAG + `Knight Move Square: `, square)
+        if (sqr !== undefined) {
+            const square = GameStateManager.getInstance().GameState.get(sqr)
+            moves.push(square);
+
+            console.log(TAG + `Knight Move Square: `, square);
+        }
     });
+
+    moves.filter((s) => { return s !== undefined })
 
     // selectedPiece.moves = moves;
     return moves;
@@ -786,7 +791,7 @@ export const handleKingMoves = (fromSquare, toSquare) => {
     // Check for threats on square, 
     const iToDrop = []
     moves.forEach((sqr) => {
-        if (sqr.piece === undefined) {
+        if (sqr.piece === undefined || sqr.piece === null) {
             iToDrop.push(moves.indexOf(sqr));
         } else {
             const isThreatened = KingLogicHandler.getInstance().checkForThreatOnSquare(sqr, piece.color);
