@@ -250,6 +250,7 @@ export class KingLogicHandler {
 
     isCastleMove(fromSquare, toSquare) {
         const piece = fromSquare.piece
+        if (piece.type.toLowerCase() !== "k") return false;
         switch (piece.color) {
             case "white":
                 return this.castlingSquares.white.castleShort.includes(toSquare.position) || this.castlingSquares.white.castleLong.includes(toSquare.position)
@@ -267,7 +268,7 @@ export class KingLogicHandler {
             case "white":
                 rookCanCastle = 'f1' === (toSquare.position) || 'd1' === (toSquare.position)
                 console.log(this.TAG + `Rook can castle: ${rookCanCastle}`);
-                return rookCanCastle;
+                return rookCanCastle
                 break;
             case "black":
                 rookCanCastle = 'f8' === (toSquare.position) || 'd8' === (toSquare.position)

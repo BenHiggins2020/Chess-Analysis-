@@ -616,7 +616,7 @@ export const calculateKnightMoves = (fromSquare) => {
             const square = GameStateManager.getInstance().GameState.get(sqr)
             moves.push(square);
 
-            console.log(TAG + `Knight Move Square: `, square);
+            // console.log(TAG + `Knight Move Square: `, square);
         }
     });
 
@@ -625,11 +625,14 @@ export const calculateKnightMoves = (fromSquare) => {
     // selectedPiece.moves = moves;
     return moves;
 }
-
+// bug when trying to move rook to b1 for no reason. 
 export const handleRookMoves = (fromSquare, toSquare) => {
+    console.log(TAG + `handleRookMoves: ${fromSquare.position} -> ${toSquare.position}`)
     const piece = fromSquare.piece
     const moves = calculateRookMoves(fromSquare);
     piece.moves = moves;
+    let moveCoords = moves.map((sqr) => { return sqr.position });
+    console.log(TAG + `Rook move coords: ${moveCoords}`);
 
 
     if (moves.includes(toSquare)) {
@@ -652,10 +655,11 @@ export const handleRookMoves = (fromSquare, toSquare) => {
         // }
         piece.isFirstMove = false;
         return true;
-    } else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
-        piece.isFirstMove = false;
-        return true;
     }
+    // else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
+    //     piece.isFirstMove = false;
+    //     return true;
+    // }
     return false;
 
 }
