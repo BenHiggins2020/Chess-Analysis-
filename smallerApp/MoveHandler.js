@@ -793,26 +793,6 @@ export const handleKingMoves = (fromSquare, toSquare) => {
     const moves = calculateKingMoves(fromSquare);
     piece.moves = moves;
     // Check for threats on square, 
-    const iToDrop = []
-    moves.forEach((sqr) => {
-        if (sqr.piece === undefined || sqr.piece === null) {
-            iToDrop.push(moves.indexOf(sqr));
-        } else {
-            const isThreatened = KingLogicHandler.getInstance().checkForThreatOnSquare(sqr, piece.color);
-            if (isThreatened) {
-                iToDrop.push(moves.indexOf(sqr));
-            }
-        }
-
-    });
-
-    console.log(TAG + `Got count of un-usable squares (for king) ${iToDrop.length}`);
-
-    // iToDrop.forEach((i) => {
-    //     console.log(TAG + `Illegal Move square : ${moves[i].position}`)
-
-    //     moves.splice(i, 1);
-    // });
 
     console.log(TAG + ``)
 

@@ -9,12 +9,16 @@ import { KingLogicHandler } from "./Handlers/KingLogicHandler.js";
 import { PawnLogicHandler } from "./Handlers/PawnLogicHandler.js";
 import { BishopLogicHandler, } from "./Handlers/BishopLogicHandler.js";
 import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
+import { PGNManager } from "./Manager/PGNManager.js";
+import { ChessNavigator } from "./Util/ChessNavigator.js";
 
 export class GameStateManager {
     static #instance = null;
     #selected = null
     #turn = 'white';
     #gameState = new Map(); // key: square position (e.g. "e4"), value: Square object
+    #fenState = new Map();
+
 
 
     constructor(name) {
@@ -39,6 +43,16 @@ export class GameStateManager {
         this.PGNTracker = createPGNTracker({ "White": "Player 1", "Black": "Player 2" });
         //this.stockfish = await createStockfish(); // from the earlier helper
         this.setupStockfish();
+
+        this.moveObj = {
+            toSquare: "",
+            froMSquare: ""
+        }
+
+        this.moveList = new Map();
+        this.currentMoveNumber = 0;
+        this.nav = new ChessNavigator();
+
     }
 
     setStockfishLines(lines) {
@@ -58,6 +72,7 @@ export class GameStateManager {
             const pos1 = bestMove.substring(0, 2);
             const pos2 = bestMove.substring(2, 4);
             this.handleMove(pos1, pos2);
+
 
         });
     }
@@ -299,6 +314,7 @@ export class GameStateManager {
         this.#turn = 'white';
         this.updateStatus(this.#turn);
         this.updateAnalysis("");
+        this.currentMoveNumber = 0;
 
 
     }
@@ -481,79 +497,6 @@ export class GameStateManager {
     }
 
 
-    generateFEN() {
-        let fen = "";
-        let rowCount = 8;
-
-        while (rowCount >= 1) {
-            let fileCount = 1;
-            while (fileCount <= 8) {
-                const square = this.getSquare(`${fileCount}-${rowCount}`);
-                if (square) {
-                    let piece = square.piece;
-                    if (piece) {
-                        fen += piece.symbol;
-                    } else {
-                        fen += "0"; // Empty square
-                    }
-                } else {
-                    fen += "0";
-                }
-                fileCount++;
-            }
-            fen += "\n";
-            rowCount--;
-        }
-        return fen;
-    }
-
-    parseFEN(fen) {
-        this.#gameState = new Map();
-        const fenRows = fen.trim().split('\n');
-
-        for (let row = 0; row < fenRows.length; row++) {
-            const fenLine = fenRows[row].trim();
-            if (fenLine === "") continue; // Skip empty lines
-
-            for (let col = 0; col < fenLine.length; col++) {
-                const char = fenLine[col];
-                if (char === '0') {
-                    continue; // Empty square
-                }
-
-                const pieceType = char;
-                const color = char === 'k' || char === 'q' ? 'b' : (char === 'K' || char === 'Q') ? 'w' : null;
-                if (!color) {
-                    console.warn("Invalid FEN:  Non-standard piece");
-                    continue;
-                }
-
-                const square = new Square(col + 1, row + 1, this);
-                square.piece = new Piece(pieceType, color, this);
-                this.#gameState.set(`${col + 1}-${row + 1}`, square);
-            }
-        }
-    }
-
-
-    generatePGN() {
-        let pgn = "PGN Version:\n";
-        pgn += "1. ";
-
-        let moves = [];
-        for (const [position, square] of this.#gameState) {
-            if (square.piece) {
-                moves.push(`{${position}} ${square.piece.symbol}`);
-            }
-        }
-
-        pgn += moves.join(", ");
-
-        return pgn;
-    }
-
-
-
     findSquare(squareNotation) {
         // Convert the notation to row and column indices.  Handles both
         // algebraic and numeric notations.
@@ -616,6 +559,7 @@ export class GameStateManager {
         // console.log(pgnTracker.pgn);        // full PGN string so far
         return result;
     }
+
     async analyse(fen) {
         const result = await this.stockfish.analyse(fen, this.stockfishLines);
         console.log(this.TAG + `Stockfish evaluation:`, result);
@@ -643,7 +587,7 @@ export class GameStateManager {
 
         if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentTurn) {
             // this.checkForThreats(toSquare, piece);
-            if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+            if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k") {
                 // update toSquare to correctly castle
                 const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(fromSquare, toSquare);
                 console.log(this.TAG + `King Castle Square : ${kingCastleSqr.position}`)
@@ -666,6 +610,19 @@ export class GameStateManager {
         // const cpLoss = Math.max(0, this.eval_before + this.eval_after);
         // const quality = this.cpLossToQuality(cpLoss);
 
+        this.moveObj = {
+            fromSquare: fromSquare,
+            toSquare: toSquare
+        }
+        // TODO create a "forceMove function which simply does the moving without the checks. "
+        const moveNum = this.PGNTracker.moveCount();
+        console.log(this.TAG + `Setting Move History object. MoveCount: ${moveNum}`, this.moveObj);
+
+        this.moveList.set(
+            moveNum,
+            this.moveObj
+        )
+
         this.#gameState.get(fromSquare.position).removePiece()
         this.#gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
 
@@ -680,9 +637,117 @@ export class GameStateManager {
         this.updateStatus(this.currentTurn);
         this.updateAnalysis(this.PGNTracker.pgn());
 
+
         if (this.playComputer && this.currentTurn !== this.player) {
             this.computerMove();
         }
+
+        this.nav.loadPgn(this.PGNTracker.pgn())
+        this.currentMoveNumber += 1;
+
+    }
+
+    /**
+     * Used to enable moves without any of the checks. 
+     * This should be used when we are doing computer moves, or back and forth. 
+     * 
+     * @param {Square.position} fromCoord 
+     * @param {Square.position} toCoord 
+     */
+    #forceMove = (fromSquare, toSquare) => {
+        console.log(this.TAG + `forceMove: ${fromSquare} -> ${fromSquare}`);
+        console.log(this.TAG + `does the fromSquare still have a piece on it... `, fromSquare);
+
+        const piece = fromSquare.piece;
+        toSquare.setPiece(piece);
+        fromSquare.removePiece();
+
+
+    }
+
+    onBack() {
+        const pgn = this.PGNTracker.pgn();
+        const moveCount = this.PGNTracker.moveCount();
+        console.log(this.TAG + `onBack pressed: Current move number : ${this.currentMoveNumber} , move count via pgn tracker ${moveCount}`);
+
+
+        let result = this.nav.loadPgn(pgn);
+        if (moveCount !== this.currentMoveNumber) {
+            result = this.nav.prev();
+        }
+        // gets the current move, 
+
+
+        // console.log(this.TAG + `snapshot via navigator`, snap)
+        // let result = this.nav.prev();
+        console.log(this.TAG + `result of navigation: `, result);
+
+        const fromCoord = result.fromSquare;
+        const toCoord = result.toSquare;
+        // get the piece from toSquare (we are moving backwards) 
+
+        const toSquare = this.#gameState.get(toCoord);
+        const fromSquare = this.#gameState.get(fromCoord);
+
+        this.#forceMove(toSquare, fromSquare);
+        //then current index must be updated...
+        this.currentMoveNumber -= 1;
+
+
+
+
+
+        //PGNManager.getSquareFromMove(this.currentMoveNumber - 1, this.PGNTracker.pgn())
+        // this.currentMoveNumber -= 1;
+        // if (!this.currentMoveNumber <= this.moveList.length) {
+        //     console.log(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
+        // }
+
+        // let moveData = this.moveList.get(this.currentMoveNumber);
+        // console.log(this.TAG + `moveData: `, moveData);
+
+        // const toSquare = moveData.toSquare;
+        // const fromSquare = moveData.fromSquare;
+
+        //this.#forceMove(toSquare)
+    }
+
+    onNext() {
+        console.log(this.TAG + `onNext pressed`);
+
+        // this.currentMoveNumber += 1;
+
+        if (!this.currentMoveNumber <= this.moveList.length) {
+            console.log(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
+        }
+
+        const pgn = this.PGNTracker.pgn()
+        //   let result = this.nav.loadPgn(pgn);
+        // if (moveCount !== this.currentMoveNumber) {
+        this.nav.loadPgn(pgn)
+        this.nav.goTo(this.currentMoveNumber);
+        const result = this.nav.next();
+        // }
+        // gets the current move, 
+
+
+
+
+        const fromCoord = result.toSquare;
+        const toCoord = result.fromSquare;
+        // get the piece from toSquare (we are moving backwards) 
+
+        const toSquare = this.#gameState.get(toCoord);
+        const fromSquare = this.#gameState.get(fromCoord);
+
+        this.#forceMove(toSquare, fromSquare);
+        //then current index must be updated...
+        this.currentMoveNumber += 1;
+        // let moveData = this.moveList.get(this.currentMoveNumber);
+        // const toSquare = moveData.toSquare;
+        // const fromSquare = moveData.froMSquare;
+
+        // this.#forceMove(toSquare)
     }
 
     updateStatus(currentPlayer) {

@@ -481,5 +481,5 @@ export function createPGNTracker(headers = {}) {
     }
 
     // Then expose it in the return object:
-    return { push, undo, pgn, fen, finish, reset, currentTurn, moveCount };
+    return { push, undo, pgn, fen, finish, reset, currentTurn, moveCount, history };
 }

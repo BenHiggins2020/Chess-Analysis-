@@ -78,4 +78,15 @@ startBtn.addEventListener("click", () => {
     // analysisOutput.value = gameState.startAnalysis(analysisOutput);
 });
 
+const prevBtn = document.getElementById("prev-move-btn");
+const nextBtn = document.getElementById("next-move-btn");
+
+prevBtn.addEventListener('click', () => {
+    GameStateManager.getInstance().onBack();
+
+});
+nextBtn.addEventListener('click', () => {
+    GameStateManager.getInstance().onNext();
+
+});
 

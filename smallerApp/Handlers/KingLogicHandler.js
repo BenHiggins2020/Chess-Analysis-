@@ -59,45 +59,45 @@ export class KingLogicHandler {
             return;
         }
 
-        if (this.isCastleMove(fromSquare, toSquare)) {
-            console.log(this.TAG + `isCastle move!! lets castle the rook!! `);
+        if (this.isCastleMove(fromSquare, toSquare) && this.canCastle(piece.color)) {
+            // console.log(this.TAG + `isCastle move and we can castle!!! lets castle the rook!! `);
             this.castle(fromSquare, toSquare);
         }
         if (piece.color === 'white') {
             this.hasWhiteKingMoved = true;
             this.whiteKingPos = toSquare.position;
-            console.log(this.TAG + `White king has moved. hasWhiteKingMoved set to true.`);
+            // // console.log(this.TAG + `White king has moved. hasWhiteKingMoved set to true.`);
         } else if (piece.color === 'black') {
             this.hasBlackKingMoved = true;
             this.blackKingPos = toSquare.position;
 
-            console.log(this.TAG + `Black king has moved. hasBlackKingMoved set to true.`);
+            // console.log(this.TAG + `Black king has moved. hasBlackKingMoved set to true.`);
         }
     }
 
     handleCastling = (fromSquare, toSquare) => {
-        console.log(this.TAG + `Attempting to Castle as ${fromSquare.piece.color}`);
+        // console.log(this.TAG + `Attempting to Castle as ${fromSquare.piece.color}`);
         const piece = fromSquare.piece;
-        console.log(this.TAG + `Castle to ${toSquare.position}`);
+        // console.log(this.TAG + `Castle to ${toSquare.position}`);
 
         switch (piece.color) {
             case "white":
                 if (this.hasWhiteKingMoved) {
-                    console.log(this.TAG + `White has moved. Cannot castle..`);
+                    // console.log(this.TAG + `White has moved. Cannot castle..`);
                     return;
                 }
                 if (!this.#whiteCastlingRights(toSquare.position)) {
-                    console.log(this.TAG + "White does not have castling rights. ");
+                    // console.log(this.TAG + "White does not have castling rights. ");
                     return;
                 }
                 break;
             case "black":
                 if (this.hasBlackKingMoved) {
-                    console.log(this.TAG + `Black has moved. Cannot castle..`);
+                    // console.log(this.TAG + `Black has moved. Cannot castle..`);
                     return;
                 }
                 if (!this.#blackCastlingRights(toSquare.position)) {
-                    console.log(this.TAG + "Black does not have castling rights. ");
+                    // console.log(this.TAG + "Black does not have castling rights. ");
                     return;
                 }
                 break;
@@ -108,17 +108,38 @@ export class KingLogicHandler {
     }
 
     #whiteCastlingRights = (toCoord) => {
-        console.log(this.TAG + `toCoord: ${toCoord}`)
+        // console.log(this.TAG + ` WhiteCastlingRights: toCoord: ${toCoord}`)
+
         if (this.castlingSquares.white.castleShort.includes(toCoord)) {
+            // console.log(this.TAG + `WhiteCastlingRights: Castling Short`);
+
             // Kingside castling for white
             // Squares f1 and g1 must be empty, and not under attack.
+            const h1 = GameStateManager.getInstance().getSquare('h1');
+
             const g1 = GameStateManager.getInstance().getSquare('g1');
             const f1 = GameStateManager.getInstance().getSquare('f1');
 
-            if (g1.piece === null && f1.piece === null) {
-                // No pieces on squares, passes 
+            const logic = {
+                pieceIsNOTUndefined: (h1.piece !== null && h1.piece !== undefined),
+                pieceIsRook: h1.piece.type === "R",
+                pieceHasNOTMoved: !h1.piece.hasMoved
+            }
+
+            // console.log(this.TAG + `Logic Check for Rook on H1: `, logic);
+
+            if (logic.pieceIsNOTUndefined && logic.pieceIsRook && logic.pieceHasNOTMoved) {
+                // console.log(this.TAG + `WhiteCastlingRights: rook has not moved from h1. `)
+                //continue
+            }
+
+            if ((g1.piece === null || g1.piece === undefined) && (f1.piece === null || f1.piece === undefined)) {
+                // No piece on square f1, and rook on g1 has not moved. 
             } else {
-                console.log(this.TAG + `square was not empty. g1: ${g1.piece !== null} f1 ${f1.piece !== null}`)
+                // console.log(this.TAG + `WhiteCastlingRights: square was not empty:`)
+                console.warn(this.TAG + ` g1 `, g1.piece);
+                console.warn(this.TAG + ` f1 `, f1.piece);
+
                 return false;
             }
 
@@ -128,19 +149,27 @@ export class KingLogicHandler {
             if (!f1Threat && !g1Threat) {
                 // No Threats on Squares
             } else {
-                console.log(this.TAG + `threat found on f1: ${f1Threat}, threat found on g1 ${g1Threat}`);
+                // console.log(this.TAG + `threat found on f1: ${f1Threat}, threat found on g1 ${g1Threat}`);
             }
         }
         else if (this.castlingSquares.white.castleLong.includes(toCoord)) {
+            // console.log(this.TAG + `WhiteCastlingRights: Castling Long`);
+
             // Queenside castling for white
             // Squares b1, c1 and d1 must be empty, and not under attack.
 
             const a1 = GameStateManager.getInstance().getSquare('a1');
+
             const b1 = GameStateManager.getInstance().getSquare('b1');
             const c1 = GameStateManager.getInstance().getSquare('c1');
 
+            if ((a1.piece !== null || ai.piece !== undefined) && a1.piece.type.toLowerCase() === "r" && !a1.hasMoved) {
+                // rook is still on a1 and has not moved. 
+            } else {
+                return false;
+            }
 
-            if (a1.piece === null && b1.piece === null, c1.piece === null) {
+            if (b1.piece === null, c1.piece === null) {
                 // No pieces on squares, passes 
             } else {
                 return false;
@@ -157,7 +186,7 @@ export class KingLogicHandler {
                 return false;
             }
         } else {
-            console.log(this.TAG + `white can't castle to ${toCoord}`)
+            // console.log(this.TAG + `white can't castle to ${toCoord}`)
             return false;
         }
         return true;
@@ -171,9 +200,9 @@ export class KingLogicHandler {
             const b8 = GameStateManager.getInstance().getSquare('g8').piece == null;
             const c8 = GameStateManager.getInstance().getSquare('h8').piece == null;
             if (b8 && c8) {
-                console.log(this.TAG + `Squares f8 and g8 are empty. Checking for threats...`);
+                // console.log(this.TAG + `Squares f8 and g8 are empty. Checking for threats...`);
             } else {
-                console.log(this.TAG + `Cannot castle kingside for black. Squares f8 ${b8} and g8 ${c8} must be empty.`);
+                // console.log(this.TAG + `Cannot castle kingside for black. Squares f8 ${b8} and g8 ${c8} must be empty.`);
                 return; // Cannot castle if either of the squares are not empty
             }
 
@@ -181,9 +210,9 @@ export class KingLogicHandler {
             const g8Threat = this.checkForThreatOnSquare(this.chessboard.gameState.get('g8'), 'black');
 
             if (!f8Threat && !g8Threat) {
-                console.log(this.TAG + `Squares f8 and g8 are not under attack. Castling is allowed.`);
+                // console.log(this.TAG + `Squares f8 and g8 are not under attack. Castling is allowed.`);
             } else {
-                console.log(this.TAG + `Cannot castle kingside for black. Square f8 under threat ${f8Threat} and square g8 under threat ${g8Threat}.`);
+                // console.log(this.TAG + `Cannot castle kingside for black. Square f8 under threat ${f8Threat} and square g8 under threat ${g8Threat}.`);
                 return; // Cannot castle if either of the squares are under attack
             }
 
@@ -197,9 +226,9 @@ export class KingLogicHandler {
             const d8 = GameStateManager.getInstance().getSquare('d8').piece == null;
 
             if (b8 && c8 && d8) {
-                console.log(this.TAG + `Squares b8, c8 and d8 are empty. Checking for threats...`);
+                // console.log(this.TAG + `Squares b8, c8 and d8 are empty. Checking for threats...`);
             } else {
-                console.log(this.TAG + `Cannot castle queenside for black. Squares b8 ${b8}, c8 ${c8} and d8 ${d8} must be empty.`);
+                // console.log(this.TAG + `Cannot castle queenside for black. Squares b8 ${b8}, c8 ${c8} and d8 ${d8} must be empty.`);
                 return; // Cannot castle if any of the squares are not empty
             }
 
@@ -208,14 +237,14 @@ export class KingLogicHandler {
             const d8Threat = this.checkForThreatOnSquare(d8, 'black');
 
             if (!b8Threat && !c8Threat && !d8Threat) {
-                console.log(this.TAG + `Squares b8, c8 and d8 are not under attack. Castling is allowed.`);
+                // console.log(this.TAG + `Squares b8, c8 and d8 are not under attack. Castling is allowed.`);
             } else {
-                console.log(this.TAG + `Cannot castle queenside for black. Squares b8 under threat ${b8Threat}, c8 under threat ${c8Threat} and d8 under threat ${d8Threat}.`);
+                // console.log(this.TAG + `Cannot castle queenside for black. Squares b8 under threat ${b8Threat}, c8 under threat ${c8Threat} and d8 under threat ${d8Threat}.`);
                 return; // Cannot castle if any of the squares are under attack
             }
 
         } else {
-            console.log(this.TAG + `black can't castle to ${toCoord}`)
+            // console.log(this.TAG + `black can't castle to ${toCoord}`)
             return false;
         }
 
@@ -223,7 +252,7 @@ export class KingLogicHandler {
     }
 
     castle(fromSquare, toSquare) {
-        console.log(this.TAG + " Castling. ");
+        // console.log(this.TAG + " Castling. ");
         const piece = fromSquare.piece
         switch (piece.color) {
             case "white":
@@ -267,19 +296,19 @@ export class KingLogicHandler {
         switch (piece.color) {
             case "white":
                 rookCanCastle = 'f1' === (toSquare.position) || 'd1' === (toSquare.position)
-                console.log(this.TAG + `Rook can castle: ${rookCanCastle}`);
+                // console.log(this.TAG + `Rook can castle: ${rookCanCastle}`);
                 return rookCanCastle
                 break;
             case "black":
                 rookCanCastle = 'f8' === (toSquare.position) || 'd8' === (toSquare.position)
-                console.log(this.TAG + `Rook can castle: ${rookCanCastle}`);
+                // console.log(this.TAG + `Rook can castle: ${rookCanCastle}`);
                 return rookCanCastle;
                 break;
         }
     }
 
     castleLongBlack() {
-        console.log(this.TAG + `castling long - black`);
+        // console.log(this.TAG + `castling long - black`);
         // Rook to d8 ... 
         const a8 = GameStateManager.getInstance().getSquare('a8');
         const d8 = GameStateManager.getInstance().getSquare('d8');
@@ -291,7 +320,7 @@ export class KingLogicHandler {
     }
 
     casteShortBlack() {
-        console.log(this.TAG + `castling short - black`);
+        // console.log(this.TAG + `castling short - black`);
         const h8 = GameStateManager.getInstance().getSquare('h8');
         const f8 = GameStateManager.getInstance().getSquare('f8');
         const rook = h8.piece;
@@ -301,7 +330,7 @@ export class KingLogicHandler {
     }
 
     castleLongWhite() {
-        console.log(this.TAG + `castling long - white`);
+        // console.log(this.TAG + `castling long - white`);
         //Rd1, Kc1
         const a1 = GameStateManager.getInstance().getSquare('a1');
         const d1 = GameStateManager.getInstance().getSquare('d1');
@@ -312,7 +341,7 @@ export class KingLogicHandler {
     }
 
     casteShortWhite() {
-        console.log(this.TAG + `castling short - white`);
+        // console.log(this.TAG + `castling short - white`);
         //Rd1, Kc1
         const h1 = GameStateManager.getInstance().getSquare('h1');
         const f1 = GameStateManager.getInstance().getSquare('f1');
@@ -322,14 +351,34 @@ export class KingLogicHandler {
         h1.removePiece();
     }
 
+    canCastle2(color, coord) {
+        switch (color) {
+            case "white":
+                canCastleWhite(coord);
+                break;
+            case "black":
+                canCastleBlack(coord);
+                break;
+
+        }
+    }
+
+    /**
+     * takes a position coordinate. and maps it to properChecks.
+     * @param {str} coord 
+     */
+    canCastleWhite(coord) {
+
+    }
+
     canCastle(color) {
         let canCastle = false;
         switch (color) {
             case "white":
-                canCastle = this.hasWhiteKingMoved && this.#whiteCastlingRights('h1') || this.#whiteCastlingRights('a1')
+                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('h1') || this.#whiteCastlingRights('a1')
                 break;
             case "black":
-                canCastle = this.hasBlackKingMoved && this.#blackCastlingRights('h8') || this.#blackCastlingRights('a8')
+                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('h8') || this.#blackCastlingRights('a8')
                 break;
         }
         return canCastle;
@@ -340,10 +389,10 @@ export class KingLogicHandler {
 
         switch (color) {
             case "white":
-                canCastle = this.hasWhiteKingMoved && this.#whiteCastlingRights('a1')
+                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('a1')
                 break;
             case "black":
-                canCastle = this.hasBlackKingMoved && this.#blackCastlingRights('a8')
+                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('a8')
                 break;
         }
     }
@@ -352,10 +401,10 @@ export class KingLogicHandler {
         let canCastle = false;
         switch (color) {
             case "white":
-                canCastle = this.hasWhiteKingMoved && this.#whiteCastlingRights('h1')
+                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('h1')
                 break;
             case "black":
-                canCastle = this.hasBlackKingMoved && this.#blackCastlingRights('h8')
+                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('h8')
                 break;
         }
         return canCastle;
@@ -377,12 +426,12 @@ export class KingLogicHandler {
             if (sq.piece !== null && sq.piece.color !== kingColor) {
                 const opponentMoves = sq.piece.moves;
                 if (opponentMoves.includes(square.position)) {
-                    console.log(this.TAG + `Square ${square.position} is under attack by ${sq.piece.type} at ${sq.position}`);
+                    // console.log(this.TAG + `Square ${square.position} is under attack by ${sq.piece.type} at ${sq.position}`);
                     return true;
                 }
             }
         });
-        console.log(this.TAG + `No threats on square ${square.position}`)
+        // console.log(this.TAG + `No threats on square ${square.position}`)
         return false; // No threat
     }
 
@@ -396,14 +445,14 @@ export class KingLogicHandler {
                 squares = this.castlingSquares.white;
 
                 if (toCoord === 'g1' || toCoord == 'c1') {
-                    console.log(this.TAG + `toCoord is correct! King should be at ${toCoord}`)
+                    // console.log(this.TAG + `toCoord is correct! King should be at ${toCoord}`)
                 }
                 if (squares.castleLong.includes(toCoord)) {
-                    console.log(this.TAG + `castling long, got coord ${toCoord}, chaning to c1`);
+                    // console.log(this.TAG + `castling long, got coord ${toCoord}, chaning to c1`);
                     return GameStateManager.getInstance().getSquare('c1');
 
                 } else if (squares.castleShort.includes(toCoord)) {
-                    console.log(this.TAG + `castling short, got coord ${toCoord}, chaning to g1`);
+                    // console.log(this.TAG + `castling short, got coord ${toCoord}, chaning to g1`);
                     return GameStateManager.getInstance().getSquare('g1');
                 }
                 break;
@@ -412,13 +461,13 @@ export class KingLogicHandler {
                 squares = this.castlingSquares.black;
 
                 if (toCoord === 'g8' || toCoord == 'c8') {
-                    console.log(this.TAG + `toCoord is correct! King should be at ${toCoord}`)
+                    // console.log(this.TAG + `toCoord is correct! King should be at ${toCoord}`)
                 }
                 if (squares.castleLong.includes(toCoord)) {
-                    console.log(this.TAG + `castling long, got coord ${toCoord}, chaning to c8`);
+                    // console.log(this.TAG + `castling long, got coord ${toCoord}, chaning to c8`);
                     return GameStateManager.getInstance().getSquare('c8');
                 } else if (squares.castleShort.includes(toCoord)) {
-                    console.log(this.TAG + `castling short, got coord ${toCoord}, chaning to g8`);
+                    // console.log(this.TAG + `castling short, got coord ${toCoord}, chaning to g8`);
                     return GameStateManager.getInstance().getSquare('g8');
                 }
                 break;

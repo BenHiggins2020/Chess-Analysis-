@@ -18,7 +18,7 @@ export class RookLogicHandler {
 
 
         const ranksAbove = ranks.filter((rank) => {
-            console.log(this.TAG + `${Number(rank)} > ${Number(currentRank)} where ${currentRank} instanceOfNumber = ${Number(currentRank) instanceof Number}`)
+            // console.log(this.TAG + `${Number(rank)} > ${Number(currentRank)} where ${currentRank} instanceOfNumber = ${Number(currentRank) instanceof Number}`)
             return Number(rank) > Number(currentRank);
         });
 
@@ -223,7 +223,7 @@ export class RookLogicHandler {
         }
 
         squares.forEach((square) => {
-            console.log(this.TAG + `Squares for rook: ${square.position}`);
+            // console.log(this.TAG + `Squares for rook: ${square.position}`);
         })
         // piece.moves = squares
         return squares
