@@ -90,6 +90,15 @@ nextBtn.addEventListener('click', () => {
 
 });
 
+
+const gameModeSelection = document.getElementById("gameMode");
+
+gameModeSelection.addEventListener('change', () => {
+    console.log("Selected game mode:", gameModeSelection.value);
+    gameState.setMode(gameModeSelection.value);
+});
+
+// LLM API 
 const LLMRequest = document.getElementById("request-analysis");
 
 LLMRequest.addEventListener('click', () => {

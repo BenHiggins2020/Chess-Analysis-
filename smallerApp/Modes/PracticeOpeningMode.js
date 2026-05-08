@@ -87,14 +87,14 @@ export class PracticeOpeningMode {
         let blackMove = '';
 
         for (let token of moves.trim().split(' ')) {
-            console.log(this.TAG + `  token: ${token}, includes '.'? ${token.includes('.')}`)
+            // console.log(this.TAG + `  token: ${token}, includes '.'? ${token.includes('.')}`)
             if (token.includes('.')) {
 
                 [moveNumber, whiteMove] = token.split('.');
-                console.log(this.TAG + ` whitemove: ${whiteMove}`)
+                // console.log(this.TAG + ` whitemove: ${whiteMove}`)
                 if (whiteMove.includes('.')) {
                     whiteMove = whiteMove.split('.')[1];
-                    console.log(this.TAG + `fixing whitemove: ${whiteMove}`);
+                    // console.log(this.TAG + `fixing whitemove: ${whiteMove}`);
                 }
 
 
@@ -103,7 +103,7 @@ export class PracticeOpeningMode {
             if (!isNaN(token) && token.includes('.')) {
                 // Move number
                 [moveNumber, whiteMove] = token.split('.');
-                console.log(this.TAG + ` token: ${token}, moveNumber: ${moveNumber} whiteMove: ${whiteMove}`)
+                // console.log(this.TAG + ` token: ${token}, moveNumber: ${moveNumber} whiteMove: ${whiteMove}`)
             } else if (!isNaN(parseInt(token[0])) || token === 'O-O' || token === 'O-O-O') {
                 // White's move
                 // whiteMove = token;
@@ -136,7 +136,7 @@ export class PracticeOpeningMode {
         console.log(this.TAG + `new player pgn: `, this.playerPGN)
 
         console.log(this.TAG + `new playermoves pgn: `, this.playerMoves)
-        this.handleOnMove();
+        //this.handleOnMove();
 
     }
 

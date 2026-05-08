@@ -67,7 +67,7 @@ export function executePlayerMove(manager, fromCoord, toCoord) {
     manager.currentTurn = manager.currentTurn === "white" ? "black" : "white";
 
     manager.updateStatus(manager.currentTurn);
-    manager.updatePGN(manager.PGNTracker.pgn());
+    manager.updatePGN(manager.PGNTracker.pgn().trim());
 
     if (manager.playComputer && manager.currentTurn !== manager.player) {
         manager.computerMove();

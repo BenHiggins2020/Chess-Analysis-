@@ -122,7 +122,6 @@ export class Square {
         this.piece = piece;
 
         this.UI_ref.replaceChildren(this.piece.UI_ref)
-        // this.UI_ref.appendChild(piece.UI_ref);
 
         this.setupPieceUI();
     }
@@ -180,7 +179,9 @@ export class Square {
             selectedPiece.style.margin = '0';
             selectedPiece.style.width = rect.width + 'px';
             selectedPiece.style.height = rect.height + 'px';
+
             selectedPiece.classList.add('dragging-now');
+            selectedPiece.classList.add('is-active');
 
             const moveAt = (clientX, clientY) => {
                 selectedPiece.style.left = (clientX - offsetX) + 'px';
@@ -225,6 +226,8 @@ export class Square {
             document.addEventListener('contextmenu', onRightClick);
 
             document.onmouseup = (event) => {
+                piece.classList.remove('is-active');
+
                 document.removeEventListener('mousemove', onMouseMove);
 
                 // Find what square is under the cursor BEFORE clearing fixed position.

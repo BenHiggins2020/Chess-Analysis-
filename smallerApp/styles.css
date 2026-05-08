@@ -89,12 +89,12 @@
         background-color: #BED4CB;
     }
 
-    .dragging-now {
+    /* .dragging-now {
         position: fixed !important;
         pointer-events: none !important;
         z-index: 10000;
         margin: 0;
-    }
+    } */
 
     .dark-square {
         background-color: #F6F09F;
@@ -113,8 +113,13 @@
         align-items: center;
     }
 
-    .pice:active {
+    .piece.is-active {
         cursor: grabbing;
+    }
+
+
+    .piece:active {
+        cursor: wait;
     }
 
     .piece-white {
@@ -143,4 +148,39 @@
         border-radius: 8px;
         border-width: 2px;
         border-color: #B35656;
+    }
+
+    .menu-bar {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 10px;
+        background-color: #BED4CB;
+        border-color: #B35656;
+        border-width: 2px;
+        border-style: solid;
+        border-radius: 8px;
+        }
+        .menu-bar-dropdown {
+             padding: 0; /* Keep container clean if it holds only one element */
+        }
+    .menu-select {
+            /* General Box Appearance */
+        padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
+        border: 2px solid #ccc; /* Light gray border around the entire element */
+        border-radius: 8px; /* Soft, rounded corners for a modern look */
+        background-color: #ffffff; /* White background */
+        cursor: pointer; /* Changes mouse icon when hovering (good UX) */
+
+        /* Sizing & Typography */
+        font-size: 16px; /* Standard readable size */
+        appearance: none; /* This is crucial! It resets default browser styling for the appearance/arrow. */
+        background-image: url("data:image/svg+xml,..."); /* Fallback placeholder if needed */
+        }
+
+    .menu-select-label {
+        padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
+    
+        cursor: pointer; /* Changes mouse icon when hovering (good UX) */
     }
