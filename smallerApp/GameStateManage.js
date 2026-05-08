@@ -11,6 +11,7 @@ import { BishopLogicHandler, } from "./Handlers/BishopLogicHandler.js";
 import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 import { PGNManager } from "./Manager/PGNManager.js";
 import { ChessNavigator } from "./Util/ChessNavigator.js";
+import { buildCoachPrompt } from "./Util/PromptUtil.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -18,9 +19,7 @@ export class GameStateManager {
     #turn = 'white';
     #gameState = new Map(); // key: square position (e.g. "e4"), value: Square object
     #fenState = new Map();
-
-
-
+    #pieceNameMap = new Map()
     constructor(name) {
         this.playComputer = true;
         this.TAG = "GameStateManager: "
@@ -313,7 +312,7 @@ export class GameStateManager {
 
         this.#turn = 'white';
         this.updateStatus(this.#turn);
-        this.updateAnalysis("");
+        this.updatePGN("");
         this.currentMoveNumber = 0;
 
 
@@ -635,7 +634,7 @@ export class GameStateManager {
         this.currentTurn = this.currentTurn === 'white' ? 'black' : 'white';
 
         this.updateStatus(this.currentTurn);
-        this.updateAnalysis(this.PGNTracker.pgn());
+        this.updatePGN(this.PGNTracker.pgn());
 
 
         if (this.playComputer && this.currentTurn !== this.player) {
@@ -656,7 +655,7 @@ export class GameStateManager {
      */
     #forceMove = (fromSquare, toSquare) => {
         console.log(this.TAG + `forceMove: ${fromSquare} -> ${fromSquare}`);
-        console.log(this.TAG + `does the fromSquare still have a piece on it... `, fromSquare);
+        // console.log(this.TAG + `does the fromSquare still have a piece on it... `, fromSquare);
 
         const piece = fromSquare.piece;
         toSquare.setPiece(piece);
@@ -672,6 +671,7 @@ export class GameStateManager {
 
 
         let result = this.nav.loadPgn(pgn);
+        console.log(this.TAG + `loading pgn: `, result)
         if (moveCount !== this.currentMoveNumber) {
             result = this.nav.prev();
         }
@@ -682,6 +682,11 @@ export class GameStateManager {
         // let result = this.nav.prev();
         console.log(this.TAG + `result of navigation: `, result);
 
+        // check if result is a capture, 
+        // if(result.san.includes('x')){
+
+        // }
+
         const fromCoord = result.fromSquare;
         const toCoord = result.toSquare;
         // get the piece from toSquare (we are moving backwards) 
@@ -689,7 +694,13 @@ export class GameStateManager {
         const toSquare = this.#gameState.get(toCoord);
         const fromSquare = this.#gameState.get(fromCoord);
 
+
         this.#forceMove(toSquare, fromSquare);
+
+        if (result.capturedPiece) {
+            // if there is a capture we need to put the piece back! 
+
+        }
         //then current index must be updated...
         this.currentMoveNumber -= 1;
 
@@ -750,18 +761,47 @@ export class GameStateManager {
         // this.#forceMove(toSquare)
     }
 
+
+
+    async requestAnalysis() {
+        const tracker = this.PGNTracker;
+        const pgn = tracker.pgn();
+        const fen = this.PGNTracker.fen();
+        const stockfishAnalysis = await this.analyse(fen);
+
+        const lastMove = this.nav.prev().san;
+
+        console.log(this.TAG + `requesting Analysis: `,);
+
+        const doc = document.getElementById("analysis");
+        // doc.text = response;
+
+        const response = await buildCoachPrompt(
+            fen, lastMove, stockfishAnalysis.bestMove, stockfishAnalysis.cpLoss, pgn, {
+            onChunk: (chunk, fullText) => {
+                console.log(this.TAG + `fullText: `, fullText)
+                console.log(this.TAG + `chunk: `, chunk)
+
+                doc.textContent = fullText;
+            }
+        }
+        );
+        console.log(this.TAG + `analysis finished: `, response)
+
+    }
+
     updateStatus(currentPlayer) {
         const statusDisplay = document.getElementById("status");
         statusDisplay.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} to move.`;
     }
 
-    updateAnalysis(analysisText) {
+    updatePGN(text) {
         // console.log(this.TAG + `Updating analysis output:`, analysisText);
-        const analysisOutput = document.getElementById("analysis");
-        let str = analysisText.split(']').slice(-1)[0].trim(); // Get the last part after the last ']'
+        const pgnText = document.getElementById("pgn-text");
+        let str = text.split(']').slice(-1)[0].trim(); // Get the last part after the last ']'
 
 
         // console.log(this.TAG + `Extracted analysis text:`, str);
-        analysisOutput.textContent = str;
+        pgnText.textContent = str;
     }
 }

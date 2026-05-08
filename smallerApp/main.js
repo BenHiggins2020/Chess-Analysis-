@@ -27,7 +27,7 @@ gameState.GameState.forEach((square, coord) => {
 
 const pgn = document.getElementById("pgn");
 const loadPgnBtn = document.getElementById("load-pgn-btn");
-const analysisOutput = document.getElementById("analysis");
+const pgnTextOutput = document.getElementById("pgn-text");
 
 const statusDisplay = document.getElementById("status");
 
@@ -39,7 +39,7 @@ const nextMoveBtn = document.getElementById("next-move-btn");
 resetBtn.addEventListener("click", () => {
     console.log("Resetting board...");
     gameState.resetBoard();
-    analysisOutput.value = "";
+    pgnTextOutput.value = "";
 });
 
 
@@ -89,4 +89,10 @@ nextBtn.addEventListener('click', () => {
     GameStateManager.getInstance().onNext();
 
 });
+
+const LLMRequest = document.getElementById("request-analysis");
+
+LLMRequest.addEventListener('click', () => {
+    GameStateManager.getInstance().requestAnalysis();
+})
 

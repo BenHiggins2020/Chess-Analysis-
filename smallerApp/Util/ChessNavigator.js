@@ -50,6 +50,7 @@
 
 const PIECES = { P: 1, N: 2, B: 3, R: 4, Q: 5, K: 6, p: -1, n: -2, b: -3, r: -4, q: -5, k: -6 };
 const PIECE_CHARS = Object.fromEntries(Object.entries(PIECES).map(([k, v]) => [v, k]));
+const PIECE_NAMES = { 1: 'pawn', 2: 'knight', 3: 'bishop', 4: 'rook', 5: 'queen', 6: 'king' };
 
 const FILES = 'abcdefgh';
 const fileOf = sq => FILES.indexOf(sq[0]);
@@ -157,8 +158,9 @@ function applyMove(state, san) {
     if (candidates.length > 1) throw new Error(`Ambiguous move "${san}" — candidates: ${candidates.join(', ')}`);
 
     const fromSquare = candidates[0];
-    const newState = executeMove(state, fromSquare, toSquare, promoPiece);
-    return { newState, fromSquare, toSquare, promotion: promoPiece || '' };
+    const result = executeMove(state, fromSquare, toSquare, promoPiece);
+    const { capturedPiece, ...newState } = result;
+    return { newState, fromSquare, toSquare, promotion: promoPiece || '', capturedPiece: capturedPiece ?? null };
 }
 
 /** Check whether a piece on fromSq could reach toSq (pure geometry + board state, no legality) */
@@ -238,13 +240,18 @@ function executeMove(state, fromSq, toSq, promoPiece) {
     let ep = null;
     let halfMove = state.halfMove + 1;
 
+    // Record what's on the target square before we overwrite it
+    let capturedPieceVal = board[toIdx];
+
     // Capture or pawn move resets halfmove clock
     if (board[toIdx] !== 0 || absP === 1) halfMove = 0;
 
-    // En-passant capture
+    // En-passant capture — the captured pawn is NOT on toSq
     if (absP === 1 && toSq === state.ep) {
         const epCaptureRank = isWhite ? rankOf(toSq) - 1 : rankOf(toSq) + 1;
-        board[epCaptureRank * 8 + fileOf(toSq)] = 0;
+        const epIdx = epCaptureRank * 8 + fileOf(toSq);
+        capturedPieceVal = board[epIdx];   // grab the pawn before removing it
+        board[epIdx] = 0;
     }
 
     // Set en-passant target for double pawn push
@@ -275,6 +282,11 @@ function executeMove(state, fromSq, toSq, promoPiece) {
     }
     if (!castling) castling = '-';
 
+    // Resolve captured piece name (null if no capture)
+    const capturedPiece = capturedPieceVal !== 0
+        ? PIECE_NAMES[Math.abs(capturedPieceVal)]
+        : null;
+
     return {
         board,
         turn: isWhite ? 'b' : 'w',
@@ -282,6 +294,7 @@ function executeMove(state, fromSq, toSq, promoPiece) {
         ep,
         halfMove,
         fullMove: state.fullMove + (isWhite ? 0 : 1),
+        capturedPiece,
     };
 }
 
@@ -376,12 +389,13 @@ export class ChessNavigator {
             fromSquare: '',
             toSquare: '',
             promotion: '',
+            capturedPiece: null,
         }];
 
         let state = positions[0].state;
         for (const san of this._sanMoves) {
             try {
-                const { newState, fromSquare, toSquare, promotion } = applyMove(state, san);
+                const { newState, fromSquare, toSquare, promotion, capturedPiece } = applyMove(state, san);
                 positions.push({
                     state: newState,
                     fen: toFen(newState),
@@ -389,6 +403,7 @@ export class ChessNavigator {
                     fromSquare,
                     toSquare,
                     promotion,
+                    capturedPiece,
                 });
                 state = newState;
             } catch (e) {
@@ -400,7 +415,6 @@ export class ChessNavigator {
     }
 
     _snapshot() {
-        console.log("CHESS NAVIGATOR: " + ` index: ${this._index}`)
         const p = this._positions[this._index];
         return {
             moveIndex: this._index,
@@ -409,6 +423,7 @@ export class ChessNavigator {
             fromSquare: p.fromSquare,
             toSquare: p.toSquare,
             promotion: p.promotion,
+            capturedPiece: p.capturedPiece,   // e.g. 'knight', 'queen', null
             fen: p.fen,
             isStart: this._index === 0,
             isEnd: this._index === this._positions.length - 1,
@@ -441,9 +456,7 @@ export class ChessNavigator {
      * Returns current snapshot unchanged if already at start.
      */
     prev() {
-        console.log("CHESS NAVIGATOR: " + ` index: ${this._index}`)
-
-        if (this._index > 0) this._index -= 1;
+        if (this._index > 0) this._index--;
         return this._snapshot();
     }
 
