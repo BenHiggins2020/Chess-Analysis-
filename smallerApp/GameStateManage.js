@@ -12,6 +12,7 @@ import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 import { PGNManager } from "./Manager/PGNManager.js";
 import { ChessNavigator } from "./Util/ChessNavigator.js";
 import { buildCoachPrompt } from "./Util/PromptUtil.js";
+import { executePlayerMove, applyNavigatorUndo, applyNavigatorRedo } from "./GameMoveProcessor.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -566,102 +567,7 @@ export class GameStateManager {
     }
 
     handleMove = (fromCoord, toCoord) => {
-
-        if (fromCoord === toCoord) {
-            // console.error(this.TAG + "Cannot move to the same square: " + fromCoord);
-            return;
-        }
-
-
-        const fromSquare = this.#gameState.get(fromCoord);
-        let toSquare = this.#gameState.get(toCoord);
-        console.log(this.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
-
-        if (!fromSquare || !toSquare) {
-            console.error(this.TAG + `Invalid move from ${fromSquare} to ${toSquare}`);
-            return;
-        }
-
-        const piece = fromSquare.piece;
-
-        if (piece.canMoveTo(fromSquare, toSquare, this) && piece.color === this.currentTurn) {
-            // this.checkForThreats(toSquare, piece);
-            if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k") {
-                // update toSquare to correctly castle
-                const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(fromSquare, toSquare);
-                console.log(this.TAG + `King Castle Square : ${kingCastleSqr.position}`)
-                toSquare = kingCastleSqr;
-            }
-            // Move the piece (continue)
-        } else {
-            return; // Do nothing if the move is invalid
-        }
-
-
-        fromSquare.render();
-        toSquare.render();
-
-        //update gamestate
-        const pgnTracker = this.PGNTracker.push(fromCoord, toCoord);
-
-        // console.log(this.TAG + `PGN after move:`, pgnTracker);
-        // const result = this.doAnalysis()
-        // const cpLoss = Math.max(0, this.eval_before + this.eval_after);
-        // const quality = this.cpLossToQuality(cpLoss);
-
-        this.moveObj = {
-            fromSquare: fromSquare,
-            toSquare: toSquare
-        }
-        // TODO create a "forceMove function which simply does the moving without the checks. "
-        const moveNum = this.PGNTracker.moveCount();
-        console.log(this.TAG + `Setting Move History object. MoveCount: ${moveNum}`, this.moveObj);
-
-        this.moveList.set(
-            moveNum,
-            this.moveObj
-        )
-
-        this.#gameState.get(fromSquare.position).removePiece()
-        this.#gameState.get(toSquare.position).setPiece(piece); // Set the piece on the new square in the game state
-
-        // does piece on square target king or king square? 
-        // this.checkForThreats(toSquare);
-
-        this.deselect();
-
-        // After Move, switch player. 
-        this.currentTurn = this.currentTurn === 'white' ? 'black' : 'white';
-
-        this.updateStatus(this.currentTurn);
-        this.updatePGN(this.PGNTracker.pgn());
-
-
-        if (this.playComputer && this.currentTurn !== this.player) {
-            this.computerMove();
-        }
-
-        this.nav.loadPgn(this.PGNTracker.pgn())
-        this.currentMoveNumber += 1;
-
-    }
-
-    /**
-     * Used to enable moves without any of the checks. 
-     * This should be used when we are doing computer moves, or back and forth. 
-     * 
-     * @param {Square.position} fromCoord 
-     * @param {Square.position} toCoord 
-     */
-    #forceMove = (fromSquare, toSquare) => {
-        console.log(this.TAG + `forceMove: ${fromSquare} -> ${fromSquare}`);
-        // console.log(this.TAG + `does the fromSquare still have a piece on it... `, fromSquare);
-
-        const piece = fromSquare.piece;
-        toSquare.setPiece(piece);
-        fromSquare.removePiece();
-
-
+        executePlayerMove(this, fromCoord, toCoord);
     }
 
     onBack() {
@@ -687,22 +593,7 @@ export class GameStateManager {
 
         // }
 
-        const fromCoord = result.fromSquare;
-        const toCoord = result.toSquare;
-        // get the piece from toSquare (we are moving backwards) 
-
-        const toSquare = this.#gameState.get(toCoord);
-        const fromSquare = this.#gameState.get(fromCoord);
-
-
-        this.#forceMove(toSquare, fromSquare);
-
-        if (result.capturedPiece) {
-            // if there is a capture we need to put the piece back! 
-
-        }
-        //then current index must be updated...
-        this.currentMoveNumber -= 1;
+        applyNavigatorUndo(this, result);
 
 
 
@@ -744,16 +635,7 @@ export class GameStateManager {
 
 
 
-        const fromCoord = result.toSquare;
-        const toCoord = result.fromSquare;
-        // get the piece from toSquare (we are moving backwards) 
-
-        const toSquare = this.#gameState.get(toCoord);
-        const fromSquare = this.#gameState.get(fromCoord);
-
-        this.#forceMove(toSquare, fromSquare);
-        //then current index must be updated...
-        this.currentMoveNumber += 1;
+        applyNavigatorRedo(this, result);
         // let moveData = this.moveList.get(this.currentMoveNumber);
         // const toSquare = moveData.toSquare;
         // const fromSquare = moveData.froMSquare;
