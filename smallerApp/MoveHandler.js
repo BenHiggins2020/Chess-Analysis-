@@ -802,9 +802,11 @@ export const handleKingMoves = (fromSquare, toSquare) => {
         if (toSquare.piece !== null) {
             // but square has a piece
             if (toSquare.piece.color !== piece.color) {
+                if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
                 KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
                 return true;
             } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+                if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
                 KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
                 console.log(TAG + ` Passing Castle Move: `)
 
@@ -815,12 +817,13 @@ export const handleKingMoves = (fromSquare, toSquare) => {
                 return false;
             }
         } else { // square is in legal moves and no piece is on that square. 
-            //TODO: Check for a threat... 
+            if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
             KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
             return true;
         }
     } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
         console.log(TAG + ` Passing Castle Move: `)
+        if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
         KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
         return true; // TODO: Need to make two moves at once... this may need to be done manually.
 
@@ -922,10 +925,12 @@ export const calculateKingMoves = (fromSquare) => {
     }
 
     //Can Castle
-    if (KingLogicHandler.getInstance().canCastleShort(piece.color)) {
-        moveCoords.push(KingLogicHandler.getInstance().castlingSquares[piece.color].castleShort)
-    } else if (KingLogicHandler.getInstance().canCastleLong(piece.color)) {
-        moveCoords.push(KingLogicHandler.getInstance().castlingSquares[piece.color].castleLong)
+    const kingLogic = KingLogicHandler.getInstance();
+    if (kingLogic.canCastleShort(piece.color)) {
+        moveCoords.push(...kingLogic.castlingSquares[piece.color].castleShort);
+    }
+    if (kingLogic.canCastleLong(piece.color)) {
+        moveCoords.push(...kingLogic.castlingSquares[piece.color].castleLong);
     }
 
     const squares = [];

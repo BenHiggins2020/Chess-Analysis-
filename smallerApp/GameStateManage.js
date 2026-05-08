@@ -13,6 +13,7 @@ import { PGNManager } from "./Manager/PGNManager.js";
 import { ChessNavigator } from "./Util/ChessNavigator.js";
 import { buildCoachPrompt } from "./Util/PromptUtil.js";
 import { executePlayerMove, applyNavigatorUndo, applyNavigatorRedo } from "./GameMoveProcessor.js";
+import { PracticeOpeningMode } from "./Modes/PracticeOpeningMode.js"
 
 export class GameStateManager {
     static #instance = null;
@@ -31,6 +32,8 @@ export class GameStateManager {
         this.player = "white";
         this.stockfishLines = 4; // default lines for <= 1200 rating
         GameStateManager.#instance = this;
+
+        this.practiceMode = new PracticeOpeningMode();
 
         this.pgnParser = new ClaudePGNParser();
         //Handle King stuff: 
@@ -78,6 +81,7 @@ export class GameStateManager {
     }
 
     onStart() {
+        this.setMode();
         // Disable radio buttons, 
         const selectedOption = document.querySelector('input[name="play-as"]:checked');
         console.log(this.TAG + `Player chose to play as: ${selectedOption.value}`);
@@ -685,5 +689,18 @@ export class GameStateManager {
 
         // console.log(this.TAG + `Extracted analysis text:`, str);
         pgnText.textContent = str;
+        //if mode is set to practice: 
+        this.practiceMode.loadPlayerPGN(str);
+    }
+
+    setMode() {
+        const pgn = `1.e4 e5 2.Nf3 Nc6 3.Bc4 Nf6 4.O-O Be7 5.d3 O-O 6.c3 Re8 7.h3 d5 8.exd5 Nxd5
+9.cxd5 Qxd5 10.Nbd2 Bg4 11.Nf1 Ne4 12.Bxe4 Rxe4 13.Qb3 c6 14.Re1 b5
+15.a3 Ba6 16.Ra1 h6 17.Bb3 Qe6 18.hxg4 hxg4 19.g3 Qh3+ 20.Kf1 gxf2+
+21.Ke1 fxe1=Q+ 22.Rxe1 Rxe1 23.Qxe1 Kd7 24.a4 bxa4 25.Nc4 a5
+26.Kc3 Ke6 27.Ba4 Kf5 28.Be8 Kg6 29.Kc4 Kg7 30.b3 Kg7 31.Kc4 Kh7
+32.Bb7 Kg7 33.Kd5 f6 34.gxf6+ Kxf6 35.Ke6 Qg6 36.Qe8# 1-0
+`
+        this.practiceMode.loadPGN(pgn);
     }
 }

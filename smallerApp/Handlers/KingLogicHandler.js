@@ -29,12 +29,14 @@ export class KingLogicHandler {
 
         this.castlingSquares = {
             "white": {
-                castleLong: ['a1', 'b1', 'c1',],
-                castleShort: ['g1', 'h1']
+                // King destinations only (not rook squares)
+                castleLong: ['c1'],
+                castleShort: ['g1']
             },
             "black": {
-                castleLong: ['a8', 'b8', 'c8'],
-                castleShort: ['g8', 'h8']
+                // King destinations only (not rook squares)
+                castleLong: ['c8'],
+                castleShort: ['g8']
             }
         }
 
@@ -372,42 +374,17 @@ export class KingLogicHandler {
     }
 
     canCastle(color) {
-        let canCastle = false;
-        switch (color) {
-            case "white":
-                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('h1') || this.#whiteCastlingRights('a1')
-                break;
-            case "black":
-                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('h8') || this.#blackCastlingRights('a8')
-                break;
-        }
-        return canCastle;
+        return this.canCastleShort(color) || this.canCastleLong(color);
     }
 
     canCastleLong(color) {
-        let canCastle = false;
-
-        switch (color) {
-            case "white":
-                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('a1')
-                break;
-            case "black":
-                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('a8')
-                break;
-        }
+        const toCoord = color === "white" ? "c1" : "c8";
+        return this.#canCastleTo(toCoord, color);
     }
 
     canCastleShort(color) {
-        let canCastle = false;
-        switch (color) {
-            case "white":
-                canCastle = !this.hasWhiteKingMoved && this.#whiteCastlingRights('h1')
-                break;
-            case "black":
-                canCastle = !this.hasBlackKingMoved && this.#blackCastlingRights('h8')
-                break;
-        }
-        return canCastle;
+        const toCoord = color === "white" ? "g1" : "g8";
+        return this.#canCastleTo(toCoord, color);
     }
 
 
@@ -420,19 +397,253 @@ export class KingLogicHandler {
      * @returns false for no threats, true if a threat is found.  
      */
     checkForThreatOnSquare = (square, kingColor) => {
-        // Check if the square is under attack by any opponent piece
-        // This would involve checking all opponent pieces and their legal moves to see if any can move to this square.
-        GameStateManager.getInstance().GameState.forEach((sq) => {
-            if (sq.piece !== null && sq.piece.color !== kingColor) {
-                const opponentMoves = sq.piece.moves;
-                if (opponentMoves.includes(square.position)) {
-                    // console.log(this.TAG + `Square ${square.position} is under attack by ${sq.piece.type} at ${sq.position}`);
-                    return true;
-                }
+        // kingColor is the color of the king being attacked.
+        // Attackers are always the opposite color.
+        return this.#isSquareAttacked(square.position, this.#opponentColor(kingColor));
+    }
+
+    #opponentColor = (color) => {
+        return color === "white" ? "black" : "white";
+    }
+
+    #posToFileRank = (pos) => {
+        // pos like "e4"
+        const fileCode = pos.charCodeAt(0);
+        const rank = Number(pos[1]);
+        return { fileCode, rank };
+    }
+
+    #xyToPos = (fileCode, rank) => {
+        if (rank < 1 || rank > 8) return null;
+        const a = "a".charCodeAt(0);
+        const h = "h".charCodeAt(0);
+        if (fileCode < a || fileCode > h) return null;
+        return String.fromCharCode(fileCode) + String(rank);
+    }
+
+    #isSquareAttacked = (targetPos, attackerColor) => {
+        const { fileCode, rank } = this.#posToFileRank(targetPos);
+        const board = GameStateManager.getInstance();
+
+        // Pawn attacks
+        if (attackerColor === "white") {
+            const p1 = this.#xyToPos(fileCode - 1, rank - 1);
+            const p2 = this.#xyToPos(fileCode + 1, rank - 1);
+            for (const p of [p1, p2]) {
+                if (!p) continue;
+                const sq = board.getSquare(p);
+                if (sq?.piece && sq.piece.color === attackerColor && sq.piece.type?.toLowerCase() === "p") return true;
             }
-        });
-        // console.log(this.TAG + `No threats on square ${square.position}`)
-        return false; // No threat
+        } else {
+            const p1 = this.#xyToPos(fileCode - 1, rank + 1);
+            const p2 = this.#xyToPos(fileCode + 1, rank + 1);
+            for (const p of [p1, p2]) {
+                if (!p) continue;
+                const sq = board.getSquare(p);
+                if (sq?.piece && sq.piece.color === attackerColor && sq.piece.type?.toLowerCase() === "p") return true;
+            }
+        }
+
+        // Knight attacks
+        const knightDeltas = [
+            { dx: 1, dy: 2 }, { dx: 2, dy: 1 }, { dx: 2, dy: -1 }, { dx: 1, dy: -2 },
+            { dx: -1, dy: -2 }, { dx: -2, dy: -1 }, { dx: -2, dy: 1 }, { dx: -1, dy: 2 }
+        ];
+        for (const { dx, dy } of knightDeltas) {
+            const p = this.#xyToPos(fileCode + dx, rank + dy);
+            if (!p) continue;
+            const sq = board.getSquare(p);
+            if (sq?.piece && sq.piece.color === attackerColor && sq.piece.type?.toLowerCase() === "n") return true;
+        }
+
+        // King attacks (adjacent squares only)
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const p = this.#xyToPos(fileCode + dx, rank + dy);
+                if (!p) continue;
+                const sq = board.getSquare(p);
+                if (sq?.piece && sq.piece.color === attackerColor && sq.piece.type?.toLowerCase() === "k") return true;
+            }
+        }
+
+        // Sliding pieces: rooks/queens (orthogonal)
+        const rookDirs = [
+            { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
+        ];
+        for (const { dx, dy } of rookDirs) {
+            let x = fileCode + dx;
+            let y = rank + dy;
+            while (true) {
+                const p = this.#xyToPos(x, y);
+                if (!p) break;
+                const sq = board.getSquare(p);
+                if (!sq) break;
+                if (sq.piece) {
+                    if (sq.piece.color === attackerColor) {
+                        const t = sq.piece.type?.toLowerCase();
+                        if (t === "r" || t === "q") return true;
+                    }
+                    break; // blocked by first piece
+                }
+                x += dx;
+                y += dy;
+            }
+        }
+
+        // Sliding pieces: bishops/queens (diagonal)
+        const bishopDirs = [
+            { dx: 1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: -1, dy: -1 }
+        ];
+        for (const { dx, dy } of bishopDirs) {
+            let x = fileCode + dx;
+            let y = rank + dy;
+            while (true) {
+                const p = this.#xyToPos(x, y);
+                if (!p) break;
+                const sq = board.getSquare(p);
+                if (!sq) break;
+                if (sq.piece) {
+                    if (sq.piece.color === attackerColor) {
+                        const t = sq.piece.type?.toLowerCase();
+                        if (t === "b" || t === "q") return true;
+                    }
+                    break;
+                }
+                x += dx;
+                y += dy;
+            }
+        }
+
+        return false;
+    }
+
+    #withTemporaryBoardState = (patches, fn) => {
+        // patches: [{ square, piece }]
+        const saved = new Map();
+        for (const { square } of patches) {
+            if (!saved.has(square)) saved.set(square, square.piece);
+        }
+        for (const { square, piece } of patches) {
+            square.piece = piece;
+        }
+        try {
+            return fn();
+        } finally {
+            for (const [square, piece] of saved.entries()) {
+                square.piece = piece;
+            }
+        }
+    }
+
+    /**
+     * Returns whether a king move is legal (cannot move into check).
+     * Includes castling-through-check prevention.
+     */
+    isKingMoveLegal = (fromSquare, toSquare) => {
+        const king = fromSquare?.piece;
+        if (!king || king.type?.toLowerCase() !== "k") return false;
+        if (!toSquare) return false;
+
+        const kingColor = king.color;
+        const opponentColor = this.#opponentColor(kingColor);
+
+        // Castling legality (including intermediate squares not attacked).
+        if (this.isCastleMove(fromSquare, toSquare)) {
+            return this.#canCastleTo(toSquare.position, kingColor);
+        }
+
+        // Normal king moves
+        if (toSquare.piece && toSquare.piece.color === kingColor) return false;
+
+        const fileDelta = Math.abs(toSquare.file.charCodeAt(0) - fromSquare.file.charCodeAt(0));
+        const rankDelta = Math.abs(toSquare.rank - fromSquare.rank);
+        if (fileDelta > 1 || rankDelta > 1) return false;
+
+        // Simulate king move and ensure destination isn't attacked.
+        return this.#withTemporaryBoardState(
+            [
+                { square: fromSquare, piece: null },
+                { square: toSquare, piece: king }
+            ],
+            () => !this.#isSquareAttacked(toSquare.position, opponentColor)
+        );
+    }
+
+    #canCastleTo = (toCoord, kingColor) => {
+        const board = GameStateManager.getInstance();
+        const opponentColor = this.#opponentColor(kingColor);
+
+        const kingStart = kingColor === "white" ? "e1" : "e8";
+        const kingSquare = board.getSquare(kingStart);
+        const kingPiece = kingSquare?.piece;
+        if (!kingPiece || kingPiece.type?.toLowerCase() !== "k" || kingPiece.color !== kingColor) return false;
+
+        // King moved flag
+        if (kingColor === "white" && this.hasWhiteKingMoved) return false;
+        if (kingColor === "black" && this.hasBlackKingMoved) return false;
+
+        let rookFromPos, rookToPos, intermediatePos, emptySquares;
+        if (kingColor === "white" && toCoord === "g1") {
+            rookFromPos = "h1";
+            rookToPos = "f1";
+            intermediatePos = "f1";
+            emptySquares = ["f1", "g1"];
+        } else if (kingColor === "white" && toCoord === "c1") {
+            rookFromPos = "a1";
+            rookToPos = "d1";
+            intermediatePos = "d1";
+            emptySquares = ["b1", "c1", "d1"];
+        } else if (kingColor === "black" && toCoord === "g8") {
+            rookFromPos = "h8";
+            rookToPos = "f8";
+            intermediatePos = "f8";
+            emptySquares = ["f8", "g8"];
+        } else if (kingColor === "black" && toCoord === "c8") {
+            rookFromPos = "a8";
+            rookToPos = "d8";
+            intermediatePos = "d8";
+            emptySquares = ["b8", "c8", "d8"];
+        } else {
+            return false;
+        }
+
+        const rookFrom = board.getSquare(rookFromPos);
+        const rookPiece = rookFrom?.piece;
+        if (!rookPiece || rookPiece.color !== kingColor || rookPiece.type?.toLowerCase() !== "r") return false;
+
+        // Squares between king and rook must be empty.
+        for (const pos of emptySquares) {
+            if (board.getSquare(pos)?.piece) return false;
+        }
+
+        // Step 0: kingStart not attacked.
+        if (this.#isSquareAttacked(kingStart, opponentColor)) return false;
+
+        const intermediateSq = board.getSquare(intermediatePos);
+        const destSq = board.getSquare(toCoord);
+        const rookToSq = board.getSquare(rookToPos);
+
+        // Step 1: king moved to intermediate; rook stays on rookFrom.
+        return this.#withTemporaryBoardState(
+            [
+                { square: kingSquare, piece: null },
+                { square: intermediateSq, piece: kingPiece }
+            ],
+            () => {
+                if (this.#isSquareAttacked(intermediatePos, opponentColor)) return false;
+
+                // Step 2: king on destination, rook moved to rookTo.
+                return this.#withTemporaryBoardState(
+                    [
+                        { square: rookFrom, piece: null },
+                        { square: rookToSq, piece: rookPiece },
+                        { square: destSq, piece: kingPiece }
+                    ],
+                    () => !this.#isSquareAttacked(toCoord, opponentColor)
+                );
+            }
+        );
     }
 
     getCorrectKingSquare(fromSquare, toSquare) {
