@@ -184,3 +184,50 @@
     
         cursor: pointer; /* Changes mouse icon when hovering (good UX) */
     }
+
+    /**
+     * AI Styles for the different control panels. 
+     */
+    .hidden {
+        display: none !important;
+    }
+
+     /* Styling for the dropdown container */
+        #dropdown-container {
+            /* We need a label here since we are hiding/showing the whole block */
+            display: flex;
+            align-items: center;
+        }
+
+        /* General styling for select and button remains the same */
+        select, button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        select {
+            border: 2px solid #ccc;
+            cursor: pointer;
+            background-color: white;
+        }
+
+        button {
+            /* Default styles */
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        #start-button {
+             background-color: #007bff; 
+             color: white;
+        }
+
+        /* --- Toggle button specific style (for testing the condition) --- */
+         #toggle-button {
+            margin-top: 20px;
+            padding: 8px 15px;
+            background-color: #6c757d; /* Gray color for a secondary action */
+            color: white;
+        }

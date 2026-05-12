@@ -790,24 +790,54 @@ export const handleKingMoves = (fromSquare, toSquare) => {
 
     const piece = fromSquare.piece;
     const gameState = GameStateManager.getInstance().GameState;
+
     const moves = calculateKingMoves(fromSquare);
+
+    // need to check for castle moves... 
+
+
     piece.moves = moves;
+    const coords = [];
+
+    moves.forEach((sqr) => {
+        coords.push(sqr.position);
+    })
+    // if king has castle rights, add castling moves if can castle... 
+
+
+    console.log(TAG + `king coordinates: `, coords)
     // Check for threats on square, 
 
-    console.log(TAG + ``)
+    console.log(TAG + ``, moves)
+
+    // Determine whether the move is legal... 
 
     if (moves.includes(toSquare)) {
         console.log(TAG + `Moves includes ${toSquare.position}`)
         // toSquare is within bounded moves
         if (toSquare.piece !== null) {
             // but square has a piece
+
+            // check if we are trying to castle, and if we can. 
+            const KLM = KingLogicHandler.getInstance();
+            const canCastle = KLM.canCastle(piece.color);
+
+            const otherPiece = toSquare.piece;
+
+
+
             if (toSquare.piece.color !== piece.color) {
                 if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
                 KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
                 return true;
             } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+
                 if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
                 KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
                 console.log(TAG + ` Passing Castle Move: `)
 
                 return true;
@@ -818,13 +848,19 @@ export const handleKingMoves = (fromSquare, toSquare) => {
             }
         } else { // square is in legal moves and no piece is on that square. 
             if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
             KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
             return true;
         }
     } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+
         console.log(TAG + ` Passing Castle Move: `)
+
         if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
         KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
         return true; // TODO: Need to make two moves at once... this may need to be done manually.
 
         // const castlingSquares = KingLogicHandler.getInstance().castlingSquares[piece.color];
@@ -926,11 +962,20 @@ export const calculateKingMoves = (fromSquare) => {
 
     //Can Castle
     const kingLogic = KingLogicHandler.getInstance();
+
     if (kingLogic.canCastleShort(piece.color)) {
+        console.warn(TAG + `Can Castle short ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleShort)
         moveCoords.push(...kingLogic.castlingSquares[piece.color].castleShort);
+    } else {
+        console.error(TAG + `Can NOT Castle short ! `, kingLogic.castlingSquares[piece.color].castleShort);
     }
+
     if (kingLogic.canCastleLong(piece.color)) {
+        console.warn(TAG + `Can Castle long ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleLong)
+
         moveCoords.push(...kingLogic.castlingSquares[piece.color].castleLong);
+    } else {
+        console.error(TAG + `Can NOT Castle LONG !`, kingLogic.castlingSquares[piece.color].castleShort)
     }
 
     const squares = [];

@@ -8,6 +8,8 @@ import { BishopLogicHandler } from "./Handlers/BishopLogicHandler.js";
 import { KnighLogicHandler } from "./Handlers/KnightLogicHandler.js";
 import { RookLogicHandler } from "./Handlers/RookLogicHandler.js";
 
+import { PGNRepo } from "./Repository/PGNRepo.js";
+
 console.log("Script")
 const board = document.getElementById("board");
 const gameState = new GameStateManager();
@@ -70,7 +72,7 @@ loadPgnBtn.addEventListener("click", () => {
 });
 
 
-const startBtn = document.getElementById("start-btn");
+const startBtn = document.getElementById("start-button");
 
 startBtn.addEventListener("click", () => {
     console.log("Starting game...");
@@ -93,11 +95,62 @@ nextBtn.addEventListener('click', () => {
 
 const gameModeSelection = document.getElementById("gameMode");
 
+const computerModePanel = document.getElementById("computer_mode_panel");
+const selfModePanel = document.getElementById("self_mode_panel");
+const practiceModePanel = document.getElementById("practice_mode_panel");
+
+
 gameModeSelection.addEventListener('change', () => {
     console.log("Selected game mode:", gameModeSelection.value);
+    let value = gameModeSelection.value;
+    console.log(`selected game mode type: ${typeof value} ${value}`)
+    switch (value) {
+        case "practice_mode":
+            computerModePanel.classList.add("hidden");
+            selfModePanel.classList.add("hidden");
+            practiceModePanel.classList.remove("hidden");
+            break;
+        case "self_mode":
+            computerModePanel.classList.add("hidden");
+            selfModePanel.classList.remove("hidden");
+            practiceModePanel.classList.add("hidden");
+            break;
+        case "computer_mode":
+            computerModePanel.classList.remove("hidden");
+            selfModePanel.classList.add("hidden");
+            practiceModePanel.classList.add("hidden");
+            break;
+        default:
+            console.warn("Invalid game mode selection. " + value);
+            break;
+
+    }
+
     gameState.setMode(gameModeSelection.value);
 });
 
+
+// Practice Mode Panel: 
+const openingSelect = document.getElementById("opening-select");
+const repo_size = PGNRepo.size;
+
+PGNRepo.forEach((pgn, key) => {
+    console.log("Extracted opening:", key);
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    openingSelect.appendChild(option);
+});
+
+openingSelect.addEventListener("change", () => {
+    const selectedOpening = openingSelect.value;
+    console.log("Selected opening:", selectedOpening);
+
+    const pgn = PGNRepo.get(selectedOpening);
+    console.log(`Extracted opening: ${pgn}`);
+    gameState.loadPracticeModePgn(pgn)
+
+});
 // LLM API 
 const LLMRequest = document.getElementById("request-analysis");
 

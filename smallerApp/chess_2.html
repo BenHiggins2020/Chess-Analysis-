@@ -11,10 +11,10 @@
         <div class="menu-bar">
                 <label class = "menu-select-label"> Select Game Mode</label>
                 <div class = "menu-bar-dropdown">
-                    <select id = "gameMode" class="menu-select">
-                        <option value="pratice">Practice Opening</option>
-                        <option value="computer">Play Computer</option>
-                        <option value="self">Play Self</option>
+                    <select id = "gameMode" class="menu-select" >
+                        <option value="practice_mode" selected>Practice Opening</option>
+                        <option value="computer_mode">Play Computer</option>
+                        <option value="self_mode">Play Self</option>
                     </select>
                 </div>
 
@@ -46,21 +46,54 @@
                             </label>
                     </div>
                     
-                    <div class="btn-container">
-                         <select id="ratingSelect">
-                        <option value="1200">beginner</option>
-                        <option value="1350-1400">1350-1400</option>
-                        <option value="1450-1500">1450-1500</option>
-                        <option value="1550-1600">1550-1600</option>
-                        <option value="1600-1750">1600-1750</option>
-                        <option value="1800+">1800+</option>
-                    </select>
+                    <div id ="computer_mode_panel" class="btn-container hidden">
 
-                    <button id="set-lines-btn">Set Stockfish Lines</button>
+                        <select id="ratingSelect">
+                            <option value="1200">beginner</option>
+                            <option value="1350-1400">1350-1400</option>
+                            <option value="1450-1500">1450-1500</option>
+                            <option value="1550-1600">1550-1600</option>
+                            <option value="1600-1750">1600-1750</option>
+                            <option value="1800+">1800+</option>
+                        </select>
 
-                    <button id="start-btn">Start</button>
-                    <button id="request-analysis">Request Analysis</button>
+                        <button id="set-lines-btn">Set Stockfish Lines</button>
 
+                        <button id="start-btn">Start</button>
+                        <button id="request-analysis">Request Analysis</button>
+
+                    </div>
+
+                    <div id ="self_mode_panel" class="btn-container hidden">
+
+                        <select id="ratingSelect">
+                            <option value="1200">beginner</option>
+                            <option value="1350-1400">1350-1400</option>
+                            <option value="1450-1500">1450-1500</option>
+                            <option value="1550-1600">1550-1600</option>
+                            <option value="1600-1750">1600-1750</option>
+                            <option value="1800+">1800+</option>
+                        </select>
+
+                        <button id="set-lines-btn">Set Stockfish Lines</button>
+
+                        <button id="start-btn">Start</button>
+                        <button id="request-analysis">Request Analysis</button>
+
+                    </div>
+
+                    <div id ="practice_mode_panel" class="btn-container ">
+                         <div id="dropdown-container"> 
+                                <label for="opening-select" style="font-weight: bold;">Select Opening:</label>
+                                <select id="opening-select">
+                                    <option value="" disabled selected>-- Choose an option --</option>
+                                    
+                                </select>
+                            </div>
+                    </div>
+
+                    <!-- 2. The Start Button -->
+                     <button id="start-button">Start Now</button>
                     </div>
                    
                     

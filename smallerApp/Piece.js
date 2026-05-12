@@ -89,7 +89,7 @@ export class Piece {
         //will this move threaten the opposite king?
         const piece = fromSquare.piece
         const color = piece.color === "white" ? "white" : "black"
-        GameStateManager.getInstance().checkForThreats(fromSquare, piece);
+        // GameStateManager.getInstance().checkForThreats(fromSquare, piece);
 
         switch (this.type.toString()) {
             case 'P':

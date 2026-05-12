@@ -1,3 +1,6 @@
+// import { parseCompressedPGN } from "../Util/PGN/PGNParser_gemma.js";
+import { parsePGN } from "../Util/PGN/PGNParser_sonnet.js";
+
 export class PracticeOpeningMode {
     constructor() {
         this.TAG = "PracticeMode: ";
@@ -31,8 +34,9 @@ export class PracticeOpeningMode {
      */
     loadPGN(PGN) {
         this.setupComplete = false;
-
         this.modelPGN = PGN;
+
+        this.pgn = PGN; // This may be a mistake... 
         const moves = this.parse(PGN);
         console.log(this.TAG + `moves: `, moves);
         this.moves = moves;
@@ -56,6 +60,23 @@ export class PracticeOpeningMode {
     }
 
     parse(PGN) {
+
+
+        console.log(this.TAG + `parsing... `, PGN);
+        console.log(this.TAG + `no PGN found... was one set? `, this.pgn)
+
+        if (PGN !== null) {
+            this.pgn = PGN;
+        } else {
+        }
+
+        let moves = null// parseCompressedPGN(PGN);
+
+        moves = parsePGN(PGN); // parsing via claude sonnet. 
+        console.log(this.TAG + `moves: `, moves);
+        return moves;
+    }
+    localPaser(PGN) {
         console.log(this.TAG + `parsing... `);
         if (PGN !== null) {
             this.pgn = PGN;
@@ -128,6 +149,7 @@ export class PracticeOpeningMode {
         result.moves = moveList;
         return result;
     }
+
 
     loadPlayerPGN(PGN) {
         // may need a different parser...  the pgn loads things one at a time, it doesnt pars

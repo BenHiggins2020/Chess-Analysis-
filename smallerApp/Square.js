@@ -181,11 +181,13 @@ export class Square {
             selectedPiece.style.height = rect.height + 'px';
 
             selectedPiece.classList.add('dragging-now');
-            selectedPiece.classList.add('is-active');
+            // selectedPiece.classList.add('is-active');
 
             const moveAt = (clientX, clientY) => {
                 selectedPiece.style.left = (clientX - offsetX) + 'px';
                 selectedPiece.style.top = (clientY - offsetY) + 'px';
+                // console.log(this.TAG + `mouse moved x:${clientX - offsetX}, y: ${(clientY - offsetY)}`);
+
             };
 
             // Position immediately under the cursor.
