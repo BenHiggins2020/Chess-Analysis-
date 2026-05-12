@@ -1,4 +1,5 @@
 // import { parseCompressedPGN } from "../Util/PGN/PGNParser_gemma.js";
+import { GameStateManager } from "../GameStateManage.js";
 import { parsePGN } from "../Util/PGN/PGNParser_sonnet.js";
 
 export class PracticeOpeningMode {
@@ -38,7 +39,7 @@ export class PracticeOpeningMode {
 
         this.pgn = PGN; // This may be a mistake... 
         const moves = this.parse(PGN);
-        console.log(this.TAG + `moves: `, moves);
+        // console.log(this.TAG + `moves: `, moves);
         this.moves = moves;
         this.setupComplete = true;
     }
@@ -51,9 +52,11 @@ export class PracticeOpeningMode {
         // console.log(this.TAG + `new PgnMove: ${newPgnMove} for move Num: ${this.moveNum}`);
         console.warn(this.TAG + ` playerMoves: `, this.playerMoves.moves);
         console.warn(this.TAG + ` PGN Moves: `, this.moves.moves);
+
         const pmoves = this.playerMoves.moves;
         let playerMove = pmoves[pmoves.length - 3]
         let move = this.moves.moves[this.playerMoves.moves.length - 3];
+
         console.log(this.TAG + ` Correct Move should be :`, move);
         console.log(this.TAG + ` ... was`, playerMove);
 
@@ -62,8 +65,8 @@ export class PracticeOpeningMode {
     parse(PGN) {
 
 
-        console.log(this.TAG + `parsing... `, PGN);
-        console.log(this.TAG + `no PGN found... was one set? `, this.pgn)
+        // console.log(this.TAG + `parsing... `, PGN);
+        // console.log(this.TAG + `no PGN found... was one set? `, this.pgn)
 
         if (PGN !== null) {
             this.pgn = PGN;
@@ -73,9 +76,10 @@ export class PracticeOpeningMode {
         let moves = null// parseCompressedPGN(PGN);
 
         moves = parsePGN(PGN); // parsing via claude sonnet. 
-        console.log(this.TAG + `moves: `, moves);
+        // console.log(this.TAG + `moves: `, moves);
         return moves;
     }
+
     localPaser(PGN) {
         console.log(this.TAG + `parsing... `);
         if (PGN !== null) {

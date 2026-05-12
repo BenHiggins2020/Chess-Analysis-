@@ -331,7 +331,13 @@ export class GameStateManager {
         this.#turn = 'white';
         this.updateStatus(this.#turn);
         this.updatePGN("");
+        this.nav.toStart();
+        this.setupPGN();
         this.currentMoveNumber = 0;
+
+        const klh = KingLogicHandler.getInstance();
+        klh.hasBlackKingMoved = false;
+        klh.hasWhiteKingMove = false;
 
 
     }
@@ -512,8 +518,6 @@ export class GameStateManager {
         // King gets out of check by, moving to a square that is not threatened,
         //  blocking the check with another piece,
         //  or capturing the checking piece.
-
-
     }
 
 
@@ -603,6 +607,7 @@ export class GameStateManager {
         if (moveCount !== this.currentMoveNumber) {
             result = this.nav.prev();
         }
+
         // gets the current move, 
 
 
@@ -635,34 +640,68 @@ export class GameStateManager {
 
         //this.#forceMove(toSquare)
     }
-    onNext() {
-        console.log(this.TAG + `onNext pressed`);
 
-        if (!this.currentMoveNumber <= this.moveList.length) {
-            console.log(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
-        }
-
+    /**
+     * Setup PGN for when we are in practice mode. This also helps setup the step-through feature. 
+     */
+    setupPGN() {
         let pgn = null;
-
         console.log(this.TAG + `Current Move: `, this.currentMoveNumber);
 
         pgn = this.practiceMode.pgn;
 
         const unvariedPGN = parsePGN(pgn);
         const paths = expandVariations(unvariedPGN);
-        // console.log(this.TAG + `paths: `, paths);
-        // console.log(this.TAG + `unvaried pgn: `, unvariedPGN);
-
-        // console.log(this.TAG + `onNext got pgn: `, pgn)
-
-        //getting stuck at a  variation move... 
         pgn = paths[paths.length - 1].pgn
-        this.nav.loadPgn(pgn)
 
-        this.nav.goTo(this.currentMoveNumber);
+        const snapshot = this.nav.loadPgn(pgn);
+        this.pgnMoveCount = snapshot.total;
+        this.nav.toStart();
+        // Need to update the PGN Tracker so that we can continue moving. 
+
+        //this.PGNTracker.
+        // this.nav.goTo(this.currentMoveNumber);
+
+    }
+
+    onNext() {
+        console.log(this.TAG + `onNext pressed`);
+
+        if (!this.currentMoveNumber <= this.moveList.length) {
+            console.error(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
+        }
+
+        if (this.currentMoveNumber === this.pgnMoveCount) {
+            // we cannot move forward anymore. 
+            console.error(this.TAG + `Current move number is equal to the pgnMoveCount!! ${this.pgnMoveCount}`);
+            return;
+        }
+
+        // let pgn = null;
+
+        console.log(this.TAG + `Current Move: `, this.currentMoveNumber);
+
+        // pgn = this.practiceMode.pgn;
+
+        // const unvariedPGN = parsePGN(pgn);
+        // const paths = expandVariations(unvariedPGN);
+
+        // pgn = paths[paths.length - 1].pgn // the last path is the mainline. 
+
+        // this.nav.loadPgn(pgn)
+
+        // const snapshot = this.nav.goTo(this.currentMoveNumber);
+
+        // if (snapshot.moveIndex === this.currentMoveNumber) {
+        //     console.warn(this.TAG + `We may hav reached the end of the PGN!!! current move num: ${this.currentMoveNumber} ${snapshot.moveIndex}`);
+        //     return;
+        // }
+
+        // const snapshot = this.nav.goTo(this.currentMoveNumber);
         const result = this.nav.next();
 
         console.log(this.TAG + `result of navigation: `, result);
+        this.PGNTracker.push(result.fromSquare, result.toSquare) // Must push to pgn to that the tracker stays up to date! 
         // }
         // gets the current move, 
 
@@ -757,5 +796,6 @@ export class GameStateManager {
 
     loadPracticeModePgn(pgn) {
         this.practiceMode.loadPGN(pgn);
+        // this.setupPGN();
     }
 }

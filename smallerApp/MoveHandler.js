@@ -808,69 +808,156 @@ export const handleKingMoves = (fromSquare, toSquare) => {
     console.log(TAG + `king coordinates: `, coords)
     // Check for threats on square, 
 
-    console.log(TAG + ``, moves)
+    // console.log(TAG + ``, moves)
 
     // Determine whether the move is legal... 
 
+    // Setup Castle Service: 
+    // 1. Handle Normal Moves: 
     if (moves.includes(toSquare)) {
-        console.log(TAG + `Moves includes ${toSquare.position}`)
-        // toSquare is within bounded moves
-        if (toSquare.piece !== null) {
-            // but square has a piece
-
-            // check if we are trying to castle, and if we can. 
-            const KLM = KingLogicHandler.getInstance();
-            const canCastle = KLM.canCastle(piece.color);
-
-            const otherPiece = toSquare.piece;
+        // normal move.
+        return true;
+    } // do not retunr false yet. 
 
 
+    // 2. Check for Castle moves (outside regular squares)
+    const KLH = KingLogicHandler.getInstance();
+    console.error(TAG + `KingLogicHandler instance -> `, KLH);
+    const isCastleMove = KLH.isCastleMove(fromSquare, toSquare);
+    console.error(TAG + `Got result from isCastleMove: `, isCastleMove);
 
-            if (toSquare.piece.color !== piece.color) {
-                if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+    if (isCastleMove) {
+        console.error(TAG + `is Castle move...`);
+        // return fasle... 
+        // castle + must update PGNTracker
+        // call handle move with correct coordinates! 
 
-                KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+        let castlingSquareForWhite = [];
+        let castlingSquareForBlack = [];
 
-                return true;
-            } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+        let tryingToCastleShort = false;
+        let tryingToCastleLong = false;
 
-                if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+        switch (piece.color) {
+            case "white":
+                console.log(TAG + `finding out where we are trying to castle via toSquare, ${toSquare.position} and piece color : ${piece.color}`);
+                tryingToCastleShort = KLH.castlingSquares.white.castleShort.includes(toSquare.position);
+                tryingToCastleLong = KLH.castlingSquares.white.castleLong.includes(toSquare.position);
+                break;
 
-                KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+            case "black":
+                console.log(TAG + `finding out where we are trying to castle via toSquare, ${toSquare.position} and piece color : ${piece.color}`);
 
-                console.log(TAG + ` Passing Castle Move: `)
-
-                return true;
-            }
-            else {
-                // console.log(TAG + `square has piece but it is the same color.`)
-                return false;
-            }
-        } else { // square is in legal moves and no piece is on that square. 
-            if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
-
-            KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
-
-            return true;
+                tryingToCastleShort = KLH.castlingSquares.black.castleShort.includes(toSquare.position);
+                tryingToCastleLong = KLH.castlingSquares.black.castleLong.includes(toSquare.position);
+                break;
         }
-    } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
 
-        console.log(TAG + ` Passing Castle Move: `)
+        const canCastleShort = KLH.canCastleShort(piece.color);
 
-        if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+        const canCastleLong = KLH.canCastleLong(piece.color);
 
-        KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+        console.warn(TAG + `can castle long: ${canCastleLong}
+            \n can castle short: ${canCastleShort}`)
 
-        return true; // TODO: Need to make two moves at once... this may need to be done manually.
+        if (
+            tryingToCastleShort && canCastleShort
+        ) {
+            console.warn(TAG + ` Castling Short. `)
 
-        // const castlingSquares = KingLogicHandler.getInstance().castlingSquares[piece.color];
-        // console.log(TAG + `Checking for attempt to castle to: ${toSquare.position} `, castlingSquares);
-        // if (castlingSquares.castleLong.includes(toSquare.position) || castlingSquares.castleShort.includes(toSquare.position)) {
-        //     KingLogicHandler.getInstance().handleCastling(fromSquare, toSquare);
-        //     return false; // returning false, but sending second. castling request next! 
-        // }
+            switch (piece.color) {
+                case "white":
+                    KLH.castleShortWhite()
+                    break;
+                case "black":
+                    KLH.castleShortBlack()
+                    break;
+
+            }
+            console.warn(TAG + `Sending false because we already handled the castle. `)
+
+            return false;
+
+        }
+
+        if (
+            tryingToCastleLong && canCastleLong
+        ) {
+            console.warn(TAG + ` Castling Long. `)
+            switch (piece.color) {
+                case "white":
+                    KLH.castleLongWhite()
+                    break;
+                case "black":
+                    KLH.castleLongBlack()
+                    break;
+
+            }
+            console.warn(TAG + `Sending false because we already handled the castle. `)
+            return false;
+        }
+
+
+
     }
+
     return false;
+    // if (moves.includes(toSquare)) {
+    //     console.log(TAG + `Moves includes ${toSquare.position}`)
+    //     // toSquare is within bounded moves
+    //     if (toSquare.piece !== null) {
+    //         // but square has a piece
+
+    //         // check if we are trying to castle, and if we can. 
+    //         // const KLM = KingLogicHandler.getInstance();
+    //         // const canCastle = KLM.canCastle(piece.color);
+
+    //         // const otherPiece = toSquare.piece;
+
+    //         if (toSquare.piece.color !== piece.color) {
+    //             if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+    //             // KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+    //             return true;
+    //         } else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+
+    //             if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
+    //             // KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
+    //             console.log(TAG + ` Passing Castle Move: `)
+
+    //             return true;
+    //         }
+    //         else {
+    //             // console.log(TAG + `square has piece but it is the same color.`)
+    //             return false;
+    //         }
+    //     } else { // square is in legal moves and no piece is on that square. 
+    //         // if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
+    //         // KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
+    //         return true;
+    //     }
+    // }
+    // else if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare)) {
+
+    //     console.log(TAG + ` Passing Castle Move: `)
+
+    //     if (!KingLogicHandler.getInstance().isKingMoveLegal(fromSquare, toSquare)) return false;
+
+    //     KingLogicHandler.getInstance().onKingMove(fromSquare, toSquare);
+
+    //     return true; // TODO: Need to make two moves at once... this may need to be done manually.
+
+    //     // const castlingSquares = KingLogicHandler.getInstance().castlingSquares[piece.color];
+    //     // console.log(TAG + `Checking for attempt to castle to: ${toSquare.position} `, castlingSquares);
+    //     // if (castlingSquares.castleLong.includes(toSquare.position) || castlingSquares.castleShort.includes(toSquare.position)) {
+    //     //     KingLogicHandler.getInstance().handleCastling(fromSquare, toSquare);
+    //     //     return false; // returning false, but sending second. castling request next! 
+    //     // }
+    // }
+    // return false;
 }
 
 export const calculateKingMoves = (fromSquare) => {
@@ -963,20 +1050,22 @@ export const calculateKingMoves = (fromSquare) => {
     //Can Castle
     const kingLogic = KingLogicHandler.getInstance();
 
-    if (kingLogic.canCastleShort(piece.color)) {
-        console.warn(TAG + `Can Castle short ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleShort)
-        moveCoords.push(...kingLogic.castlingSquares[piece.color].castleShort);
-    } else {
-        console.error(TAG + `Can NOT Castle short ! `, kingLogic.castlingSquares[piece.color].castleShort);
-    }
+    // if (kingLogic.canCastleShort(piece.color)) {
 
-    if (kingLogic.canCastleLong(piece.color)) {
-        console.warn(TAG + `Can Castle long ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleLong)
+    //     console.warn(TAG + `Can Castle short ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleShort)
 
-        moveCoords.push(...kingLogic.castlingSquares[piece.color].castleLong);
-    } else {
-        console.error(TAG + `Can NOT Castle LONG !`, kingLogic.castlingSquares[piece.color].castleShort)
-    }
+    //     moveCoords.push(...kingLogic.castlingSquares[piece.color].castleShort);
+    // } else {
+    //     console.error(TAG + `Can NOT Castle short ! `, kingLogic.castlingSquares[piece.color].castleShort);
+    // }
+
+    // if (kingLogic.canCastleLong(piece.color)) {
+    //     console.warn(TAG + `Can Castle long ! (adding squares)`, kingLogic.castlingSquares[piece.color].castleLong)
+
+    //     moveCoords.push(...kingLogic.castlingSquares[piece.color].castleLong);
+    // } else {
+    //     console.error(TAG + `Can NOT Castle LONG !`, kingLogic.castlingSquares[piece.color].castleLong)
+    // }
 
     const squares = [];
 

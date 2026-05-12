@@ -148,7 +148,8 @@ openingSelect.addEventListener("change", () => {
 
     const pgn = PGNRepo.get(selectedOpening);
     console.log(`Extracted opening: ${pgn}`);
-    gameState.loadPracticeModePgn(pgn)
+    gameState.loadPracticeModePgn(pgn); // Parses the PGN 
+    gameState.setupPGN(); // setups the pgn with the ChessNavigator. 
 
 });
 // LLM API 
