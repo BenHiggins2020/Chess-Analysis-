@@ -20,10 +20,13 @@
         /* background: #BED4CB;  */
     }
 
+
     .panel-title {
+        flex:1;
         font-size: 18px;
         font-weight: bold;
         margin-bottom: 10px;
+        background-color: #BED4CB;
     }
 
     .container {
@@ -54,7 +57,7 @@
 
     .column-right {
         flex: 1;
-        background-color: #BED4CB;
+        
     }
 
 

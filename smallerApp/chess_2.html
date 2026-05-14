@@ -1,124 +1,135 @@
 <html>
-    <head>
-        <title>Chess Analysis</title>
-        <link rel="stylesheet" href="chess-review-offline.css">
-        <!-- <script  src="chess-review-offline.js"></script> -->
-        <script type="module" src="main.js"></script>
-        <link rel = "stylesheet" href="styles.css">
 
-    </head>
-    <body>
-        <div class="menu-bar">
-                <label class = "menu-select-label"> Select Game Mode</label>
-                <div class = "menu-bar-dropdown">
-                    <select id = "gameMode" class="menu-select" >
-                        <option value="practice_mode" selected>Practice Opening</option>
-                        <option value="computer_mode">Play Computer</option>
-                        <option value="self_mode">Play Self</option>
-                    </select>
-                </div>
+<head>
+    <title>Chess Analysis</title>
+    <link rel="stylesheet" href="chess-review-offline.css">
+    <!-- <script  src="chess-review-offline.js"></script> -->
+    <script type="module" src="main.js"></script>
+    <link rel="stylesheet" href="styles.css">
 
-            </div>
-        <div class="container">
-            
-            <div class="colum-left">
-                <div class="panel-title">Game</div>
-                
-                <div id="board" class="board"></div>
-                <div>
-                    <p id="status">
-                        White to move.
-                    </p>
+</head>
 
-                    <button id="reset-btn" class="move-btn"> Reset Board </button>
-                    <button id="prev-move-btn" class="move-btn"> Previous Move </button>
-                    <button id="next-move-btn" class="move-btn"> Next Move </button>
-                    
-                    <div class="btn-container">
-                            <label>
-                                Play as White:
-                                <input type="radio" name="play-as" value="white" checked="true">
-                            </label>
-
-                            <label>
-                                Play as Black:
-                                <input type="radio" name="play-as" value="black">
-                            </label>
-                    </div>
-                    
-                    <div id ="computer_mode_panel" class="btn-container hidden">
-
-                        <select id="ratingSelect">
-                            <option value="1200">beginner</option>
-                            <option value="1350-1400">1350-1400</option>
-                            <option value="1450-1500">1450-1500</option>
-                            <option value="1550-1600">1550-1600</option>
-                            <option value="1600-1750">1600-1750</option>
-                            <option value="1800+">1800+</option>
-                        </select>
-
-                        <button id="set-lines-btn">Set Stockfish Lines</button>
-
-                        <button id="start-btn">Start</button>
-                        <button id="request-analysis">Request Analysis</button>
-
-                    </div>
-
-                    <div id ="self_mode_panel" class="btn-container hidden">
-
-                        <select id="ratingSelect">
-                            <option value="1200">beginner</option>
-                            <option value="1350-1400">1350-1400</option>
-                            <option value="1450-1500">1450-1500</option>
-                            <option value="1550-1600">1550-1600</option>
-                            <option value="1600-1750">1600-1750</option>
-                            <option value="1800+">1800+</option>
-                        </select>
-
-                        <button id="set-lines-btn">Set Stockfish Lines</button>
-
-                        <button id="start-btn">Start</button>
-                        <button id="request-analysis">Request Analysis</button>
-
-                    </div>
-
-                    <div id ="practice_mode_panel" class="btn-container ">
-                         <div id="dropdown-container"> 
-                                <label for="opening-select" style="font-weight: bold;">Select Opening:</label>
-                                <select id="opening-select">
-                                    <option value="" disabled selected>-- Choose an option --</option>
-                                    
-                                </select>
-                            </div>
-                    </div>
-
-                    <!-- 2. The Start Button -->
-                     <button id="start-button">Start Now</button>
-                    </div>
-                   
-                    
-                </div>
-                    
-
-
-                <div class="pgn-container">
-                    <span class="pgn-holder">
-                        <label>
-                            Input Game PGN
-                            <input id="pgn" type="text">
-                        </label>
-                        <button id="load-pgn-btn" class="pgn-load-button"> Load </button>
-                    </span>
-                </div>
-            </div>
-           
-            <div class="column-right">
-                <div class="panel-title">PGN</div>
-                <div class="analysis" id="pgn-text"></div>
-
-                <div class="panel-title">Analysis</div>
-                <div class="analysis" id="analysis"></div>
-            </div>
-           
+<body>
+    <div class="menu-bar">
+        <label class="menu-select-label"> Select Game Mode</label>
+        <div class="menu-bar-dropdown">
+            <select id="gameMode" class="menu-select">
+                <option value="practice_mode" selected>Practice Opening</option>
+                <option value="computer_mode">Play Computer</option>
+                <option value="self_mode">Play Self</option>
+            </select>
         </div>
+
+    </div>
+    <div class="container">
+
+        <div class="colum-left">
+            <div class="panel-title">Game</div>
+
+            <div id="board" class="board"></div>
+            <div>
+                <p id="status">
+                    White to move.
+                </p>
+
+                <button id="reset-btn" class="move-btn"> Reset Board </button>
+                <button id="prev-move-btn" class="move-btn"> Previous Move </button>
+                <button id="next-move-btn" class="move-btn"> Next Move </button>
+
+                <div class="btn-container">
+                    <label>
+                        Play as White:
+                        <input type="radio" name="play-as" value="white" checked="true">
+                    </label>
+
+                    <label>
+                        Play as Black:
+                        <input type="radio" name="play-as" value="black">
+                    </label>
+                </div>
+
+                <div id="computer_mode_panel" class="btn-container hidden">
+
+                    <select id="ratingSelect">
+                        <option value="1200">beginner</option>
+                        <option value="1350-1400">1350-1400</option>
+                        <option value="1450-1500">1450-1500</option>
+                        <option value="1550-1600">1550-1600</option>
+                        <option value="1600-1750">1600-1750</option>
+                        <option value="1800+">1800+</option>
+                    </select>
+
+                    <button id="set-lines-btn">Set Stockfish Lines</button>
+
+                    <button id="start-btn">Start</button>
+                    <button id="request-analysis">Request Analysis</button>
+
+                </div>
+
+                <div id="self_mode_panel" class="btn-container hidden">
+
+                    <select id="ratingSelect">
+                        <option value="1200">beginner</option>
+                        <option value="1350-1400">1350-1400</option>
+                        <option value="1450-1500">1450-1500</option>
+                        <option value="1550-1600">1550-1600</option>
+                        <option value="1600-1750">1600-1750</option>
+                        <option value="1800+">1800+</option>
+                    </select>
+
+                    <button id="set-lines-btn">Set Stockfish Lines</button>
+
+                    <button id="start-btn">Start</button>
+                    <button id="request-analysis">Request Analysis</button>
+
+                </div>
+
+                <div id="practice_mode_panel" class="btn-container ">
+                    <div id="dropdown-container">
+                        <label for="opening-select" style="font-weight: bold;">Select Opening:</label>
+                        <select id="opening-select">
+                            <option value="" disabled selected>-- Choose an option --</option>
+
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 2. The Start Button -->
+                <button id="start-button">Start Now</button>
+            </div>
+            <div class="pgn-container">
+                <span class="pgn-holder">
+                    <label>
+                        Input Game PGN
+                        <input id="pgn" type="text">
+                    </label>
+                    <button id="load-pgn-btn" class="pgn-load-button"> Load </button>
+                </span>
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="column-right">
+            <div class="panel-title">
+                <h3>PGN</h3>
+
+            </div>
+
+            <div class="analysis" id="pgn-text"></div>
+
+            <div class="panel-title">
+                <h3>Analysis</h3>
+            </div>
+            <div class="analysis" id="analysis"></div>
+        </div>
+    </div>
+
+
+
+    </div>
+
 </html>
