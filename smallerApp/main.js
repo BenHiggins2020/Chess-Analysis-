@@ -65,6 +65,8 @@ loadPgnBtn.addEventListener("click", () => {
     const pgnText = pgn.value.trim();
     if (pgnText) {
         console.log("Loading PGN:", pgnText);
+        GameStateManager.getInstance().loadPracticeModePgn(pgnText)
+        GameStateManager.getInstance().setupPGN();
         // analysisOutput.value = gameState.parsePGN(pgnText, analysisOutput);
     } else {
         console.warn("PGN input is empty.");

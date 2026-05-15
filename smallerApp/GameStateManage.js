@@ -696,6 +696,7 @@ export class GameStateManager {
 
 
     async requestAnalysis() {
+        console.warn(this.TAG + `restAnalysis `);
         const tracker = this.PGNTracker;
         const pgn = tracker.pgn();
         const fen = this.PGNTracker.fen();
@@ -718,10 +719,11 @@ export class GameStateManager {
             }
         }
         );
-        console.log(this.TAG + `analysis finished: `, response)
-        console.log(this.TAG + `content: `, response.content)
-
-        doc.textContent = response.content;
+        console.log(this.TAG + `analysis finished: `, response);
+        const text = response.output[0].content;
+        console.log(this.TAG + `content: `, text)
+        this.updateAnalysisText(text);
+        // doc.textContent = response.content;
 
     }
 
@@ -730,6 +732,36 @@ export class GameStateManager {
         statusDisplay.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} to move.`;
     }
 
+    updateAnalysisText(txt) {
+        const analysisTxt = document.getElementById("analysis_txt");
+
+
+        analysisTxt.innerHTML = marked.parse(txt);
+    }
+
+    escapeHTML(text) {
+        const div = document.createElement('div');
+        text = text.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+        div.innerHTML = text;
+        // let html = txt.replace(/\n/g, '<br>');
+
+        // // Escape HTML special characters to prevent XSS
+        // html = this.sanitizeHTML(html);
+
+        // // Convert bold markers ***text*** into <strong>...</strong>
+        // html = html.replace(/(\*\*\*.*?\*\*\*)/g, '<strong>$1</strong>');
+
+        // analysisTxt.innerHTML = html;
+    }
+
+    /**
+     * Updates pgn ui
+     * @param {} text 
+     */
     updatePGN(text) {
         // console.log(this.TAG + `Updating analysis output:`, analysisText);
         const pgnText = document.getElementById("pgn-text");

@@ -5,6 +5,9 @@
     <link rel="stylesheet" href="chess-review-offline.css">
     <!-- <script  src="chess-review-offline.js"></script> -->
     <script type="module" src="main.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -62,7 +65,6 @@
                     <button id="set-lines-btn">Set Stockfish Lines</button>
 
                     <button id="start-btn">Start</button>
-                    <button id="request-analysis">Request Analysis</button>
 
                 </div>
 
@@ -80,7 +82,6 @@
                     <button id="set-lines-btn">Set Stockfish Lines</button>
 
                     <button id="start-btn">Start</button>
-                    <button id="request-analysis">Request Analysis</button>
 
                 </div>
 
@@ -96,6 +97,8 @@
 
                 <!-- 2. The Start Button -->
                 <button id="start-button">Start Now</button>
+                <button id="request-analysis">Request Analysis</button>
+
             </div>
             <div class="pgn-container">
                 <span class="pgn-holder">
@@ -123,8 +126,11 @@
 
             <div class="panel-title">
                 <h3>Analysis</h3>
+                <div id="analysis_txt">
+
+                </div>
+
             </div>
-            <div class="analysis" id="analysis"></div>
         </div>
     </div>
 

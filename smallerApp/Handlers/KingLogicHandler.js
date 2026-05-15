@@ -383,7 +383,6 @@ export class KingLogicHandler {
 
         if (force) {
             const king = e8.piece;
-
             c8.setPiece(king);
             e8.removePiece();
             return;
@@ -442,7 +441,6 @@ export class KingLogicHandler {
 
         if (force) {
             const king = e1.piece;
-
             c1.setPiece(king);
             e1.removePiece();
             return;
@@ -470,7 +468,6 @@ export class KingLogicHandler {
 
         if (force) {
             const king = e1.piece;
-
             g1.setPiece(king);
             e1.removePiece();
             return;
