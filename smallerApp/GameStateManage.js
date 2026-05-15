@@ -57,6 +57,7 @@ export class GameStateManager {
 
         this.moveList = new Map();
         this.currentMoveNumber = 0;
+        this.nextMoveNum = 0;
         this.nav = new ChessNavigator();
 
     }
@@ -594,78 +595,61 @@ export class GameStateManager {
         executePlayerMove(this, fromCoord, toCoord);
     }
 
-    onBack() {
-        //Note! does not correctly handle castling! 
-
-        const pgn = this.PGNTracker.pgn();
-        const moveCount = this.PGNTracker.moveCount();
-        console.log(this.TAG + `onBack pressed: Current move number : ${this.currentMoveNumber} , move count via pgn tracker ${moveCount}`);
-
-
-        let result = this.nav.loadPgn(pgn);
-        console.log(this.TAG + `loading pgn: `, result)
-        if (moveCount !== this.currentMoveNumber) {
-            result = this.nav.prev();
-        }
-
-        // gets the current move, 
-
-
-        // console.log(this.TAG + `snapshot via navigator`, snap)
-        // let result = this.nav.prev();
-        console.log(this.TAG + `result of navigation: `, result);
-
-        // check if result is a capture, 
-        // if(result.san.includes('x')){
-
-        // }
-
-        applyNavigatorUndo(this, result);
-
-
-
-
-
-        //PGNManager.getSquareFromMove(this.currentMoveNumber - 1, this.PGNTracker.pgn())
-        // this.currentMoveNumber -= 1;
-        // if (!this.currentMoveNumber <= this.moveList.length) {
-        //     console.log(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
-        // }
-
-        // let moveData = this.moveList.get(this.currentMoveNumber);
-        // console.log(this.TAG + `moveData: `, moveData);
-
-        // const toSquare = moveData.toSquare;
-        // const fromSquare = moveData.fromSquare;
-
-        //this.#forceMove(toSquare)
-    }
 
     /**
      * Setup PGN for when we are in practice mode. This also helps setup the step-through feature. 
      */
     setupPGN() {
+        console.log(this.TAG + `setting up user PGN.`);
         let pgn = null;
-        console.log(this.TAG + `Current Move: `, this.currentMoveNumber);
 
         pgn = this.practiceMode.pgn;
 
         const unvariedPGN = parsePGN(pgn);
         const paths = expandVariations(unvariedPGN);
+
         pgn = paths[paths.length - 1].pgn
 
         const snapshot = this.nav.loadPgn(pgn);
+
+        console.log(this.TAG + `got pgn from parsing: `, unvariedPGN);
+        console.log(this.TAG + `got snapshot: `, snapshot);
+
+        this.#setupPgnTracker(unvariedPGN);
+
         this.pgnMoveCount = snapshot.total;
+
         this.nav.toStart();
+
+        this.updatePGN(pgn)
+
         // Need to update the PGN Tracker so that we can continue moving. 
 
-        //this.PGNTracker.
         // this.nav.goTo(this.currentMoveNumber);
 
     }
 
+    #setupPgnTracker(unvariedPGN) {
+
+        let snapshot = this.nav.toStart();
+
+        console.log(this.TAG + `got first snapshot `, snapshot);
+
+        let moveIndex = snapshot.moveIndex;
+
+        while (moveIndex != snapshot.total) {
+            snapshot = this.nav.next();
+
+            moveIndex = snapshot.moveIndex;
+
+            console.log(this.TAG + ` pushing: ${snapshot.fromSquare} ${snapshot.toSquare}`);
+            this.PGNTracker.push(snapshot.fromSquare, snapshot.toSquare);
+
+        }
+    }
+
     onNext() {
-        console.log(this.TAG + `onNext pressed`);
+        console.log(this.TAG + `onNext pressed: Current move number : ${this.currentMoveNumber}`);
 
         if (!this.currentMoveNumber <= this.moveList.length) {
             console.error(this.TAG + ` we cannot move ahead! current move number: ${this.currentMoveNumber} of ${this.moveList.length} ... ${this.PGNTracker.history.length}`)
@@ -677,44 +661,37 @@ export class GameStateManager {
             return;
         }
 
-        // let pgn = null;
-
-        console.log(this.TAG + `Current Move: `, this.currentMoveNumber);
-
-        // pgn = this.practiceMode.pgn;
-
-        // const unvariedPGN = parsePGN(pgn);
-        // const paths = expandVariations(unvariedPGN);
-
-        // pgn = paths[paths.length - 1].pgn // the last path is the mainline. 
-
-        // this.nav.loadPgn(pgn)
-
-        // const snapshot = this.nav.goTo(this.currentMoveNumber);
-
-        // if (snapshot.moveIndex === this.currentMoveNumber) {
-        //     console.warn(this.TAG + `We may hav reached the end of the PGN!!! current move num: ${this.currentMoveNumber} ${snapshot.moveIndex}`);
-        //     return;
-        // }
-
-        // const snapshot = this.nav.goTo(this.currentMoveNumber);
-        const result = this.nav.next();
-
-        console.log(this.TAG + `result of navigation: `, result);
-        this.PGNTracker.push(result.fromSquare, result.toSquare) // Must push to pgn to that the tracker stays up to date! 
-        // }
-        // gets the current move, 
+        // If we are at 0, there will be no move for 0, so we must increment...
+        if (this.currentMoveNumber === 0) {
+            this.currentMoveNumber += 1;
+        }
 
 
-
+        const result = this.nav.goTo(this.currentMoveNumber);
+        console.log(this.TAG + `onNext, nav to next move, ${result.moveIndex} `, result)
 
         applyNavigatorRedo(this, result);
-        // let moveData = this.moveList.get(this.currentMoveNumber);
-        // const toSquare = moveData.toSquare;
-        // const fromSquare = moveData.froMSquare;
 
-        // this.#forceMove(toSquare)
     }
+
+    onBack() {
+
+        console.log(this.TAG + `onBack pressed: Current move number : ${this.currentMoveNumber}`);
+
+        // TODO: Bug where we are navigating back a move, instead of undoing the current move... 
+        const result = this.nav.goTo(this.currentMoveNumber - 1);
+
+        // const result = this.nav.prev();
+
+
+
+        console.log(this.TAG + `onBack, nav to previous move, ${result.moveIndex} `, result)
+
+        console.log(this.TAG + `result of navigation: `, result);
+
+        applyNavigatorUndo(this, result);
+    }
+
 
 
 
@@ -771,6 +748,8 @@ export class GameStateManager {
             case "practice":
                 console.log(this.TAG + `Setting mode to practice`)
                 this.mode = new PracticeOpeningMode();
+                thius.computerMove = false;
+
                 break;
             case "computer":
                 thius.computerMove = true;

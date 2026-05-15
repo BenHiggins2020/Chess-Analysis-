@@ -9,12 +9,13 @@ const TAG = "GameMoveProcessor: ";
  * @param {*} toSquare
  */
 export function transferPiece(fromCoord, toCoord) {
+
     const manager = GameStateManager.getInstance();
     let fromSquare = null;
     let toSquare = null;
-    console.warn(TAG + `Coordinate is passed not square. fromCoord: `, fromCoord);
 
     if (fromCoord === undefined) {
+        console.warn(TAG + `Coordinate is passed not square. fromCoord: `, fromCoord);
 
         fromSquare = manager.getSquare(fromCoord);
         toSquare = manager.getSquare(toCoord);
@@ -23,13 +24,13 @@ export function transferPiece(fromCoord, toCoord) {
         toSquare = toCoord;
     }
 
-    console.log(TAG + `transferPiece: ${fromSquare.position} -> ${toSquare.position} of `, fromSquare.piece);
+    console.log(TAG + `transferPiece: ${fromSquare.position} -> ${toSquare.position} of`, fromSquare.piece);
 
     const piece = fromSquare.piece;
+
     toSquare.setPiece(piece);
     fromSquare.removePiece();
 
-    manager.currentTurn = manager.currentTurn === "black" ? "white" : "black"
 
 }
 
@@ -138,7 +139,9 @@ export function onMove(fromSquare, toSquare, _manager) {
     }
     const fromCoord = fromSquare.position;
     const toCoord = toSquare.position;
+
     console.log(TAG + `onMove: ${fromCoord} ${toCoord} `);
+
     manager.PGNTracker.push(fromCoord, toCoord);
 
     manager.moveObj = {
@@ -168,14 +171,19 @@ export function onMove(fromSquare, toSquare, _manager) {
     }
 
     manager.nav.loadPgn(manager.PGNTracker.pgn());
-    console.error(TAG + `updating move number... `)
-    manager.currentMoveNumber += 1;
+    // console.error(TAG + `updating move number... `)
+    // manager.currentMoveNumber += 1;
+    this.onEndTurn();
 }
 /**
  * Apply board step for navigator "back" from a nav result (piece leaves to-square toward from-square).
  */
 export function applyNavigatorUndo(manager, result) {
+    console.log(TAG + `Undo move: `);
+
+
     const gameState = manager.GameState;
+
     const fromCoord = result.fromSquare;
     const toCoord = result.toSquare;
 
@@ -193,11 +201,19 @@ export function applyNavigatorUndo(manager, result) {
         if (result.capturedPiece) {
             // if there is a capture we need to put the piece back!
         }
-        manager.currentMoveNumber -= 1;
     }
+
+
+
+    manager.currentMoveNumber -= 1;
 
     transferPiece(toSquare, fromSquare);
 
+    if (result.san.includes('x')) {
+        // this is a capture, we need to handle it and extract the piece
+        onCaptureReset(fromSquare, toSquare, result.moveIndex);
+    }
+    console.log(TAG + `Undo move finished. `);
 
 }
 
@@ -205,14 +221,39 @@ export function applyNavigatorUndo(manager, result) {
  * Apply board step for navigator "next" from a nav result.
  */
 export function applyNavigatorRedo(manager, result) {
+    console.warn(TAG + `Redo move: `, result);
+
     const gameState = manager.GameState;
+
     const fromCoord = result.toSquare;
     const toCoord = result.fromSquare;
+
     const toSquare = gameState.get(toCoord);
     const fromSquare = gameState.get(fromCoord);
+
+    if (result.san.includes('x')) {
+
+        console.log(TAG + `capture on ${fromSquare.position}.
+            w/ ${toSquare.piece.color}'s  ${toSquare.position} ${toSquare.piece.type}
+            capturing ${fromSquare.piece.color}'s ${fromSquare.piece.type}`);
+
+        const capturedSqr = fromSquare;
+        onCaptureRemove(capturedSqr, result.moveIndex);
+        // this is a capture, we need to handle it and extract the piece
+        // onCaptureRemove(toSquare, fromSquare, result.moveIndex);
+    }
+
     transferPiece(toSquare, fromSquare);
     manager.currentMoveNumber += 1;
+
     console.error(TAG + `applyNavRedo, updating currentMoveNumber ${manager.currentMoveNumber}`);
+
+    console.warn(TAG + `Redo move finished. `);
+
+}
+
+export function onEndTurn() {
+    manager.currentTurn = manager.currentTurn === "black" ? "white" : "black"
 }
 
 /**
@@ -230,5 +271,46 @@ export function forceMove(manager, fromCoord, toCoord) {
 
     fromSquare.removePiece();
     toSquare.setPiece(piece);
+
+}
+
+// Map for saving pieces captured and their move.
+const CapturedPieceRepo = new Map();
+
+/**
+ *  Saves a piece that is about to be captured. 
+ *  Removes that piece from the square. 
+ * @param {*} fromSquare 
+ * @param {*} toSquare 
+ * @param {*} moveIndex 
+ */
+export function onCaptureRemove(capturedSqr, moveIndex) {
+    const piece = capturedSqr.piece;
+
+    CapturedPieceRepo.set(moveIndex, piece);
+
+    console.warn(TAG + `onCaptureRemove: piece of type ${piece.type} on ${capturedSqr.position} was captured. on move ${moveIndex} `);
+    console.log(TAG + `onCaptureRemove:checking piece capture repo:  `, CapturedPieceRepo);
+
+    capturedSqr.removePiece();
+}
+
+/**
+ * This should be called on an undo move (going backwards in time)
+ *  This must be called after the piece is moved from the square, such that the piece is not overwritten.
+ * @param {*} fromSquare 
+ * @param {*} toSquare 
+ * @param {*} moveIndex 
+ */
+export function onCaptureReset(fromSquare, toSquare, moveIndex) {
+    const piece = CapturedPieceRepo.get(moveIndex);
+
+    console.log(TAG + `Pulling piece from repo. via ${moveIndex} `, piece);
+
+    //fromSquare captures piece on toSquare ... 
+    console.warn(TAG + `onCaptureReset: piece of type ${piece.type} to ${toSquare.position} was placed. `);
+
+    toSquare.setPiece(piece);
+
 
 }

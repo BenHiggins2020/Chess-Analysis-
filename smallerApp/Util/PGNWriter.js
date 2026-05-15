@@ -318,7 +318,7 @@ export function createPGNTracker(headers = {}) {
     //  }
     // ──────────────────────────────────────────
     function push(fromSquare, toSquare, promotion = null) {
-        console.log(`PGNWriter: pushing... from ${fromSquare} to ${toSquare}`)
+        // console.log(`PGNWriter: pushing... from ${fromSquare} to ${toSquare}`)
         const color = colorIdx === 0 ? 'w' : 'b';
         const piece = _getPiece(board, fromSquare);
 

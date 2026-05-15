@@ -447,9 +447,9 @@ export class ChessNavigator {
      */
     next() {
         if (this._index < this._positions.length - 1) this._index++;
-        console.log(`next may not be updating... ${this._index} < ${this._positions.length - 1} ,
-            then should update(${(this._index < this._positions.length - 1)})`)
-        console.log('next', this._index);
+        // console.log(`next may not be updating... ${this._index} < ${this._positions.length - 1} ,
+        //     then should update(${(this._index < this._positions.length - 1)})`)
+        // console.log('next', this._index);
         return this._snapshot();
     }
 

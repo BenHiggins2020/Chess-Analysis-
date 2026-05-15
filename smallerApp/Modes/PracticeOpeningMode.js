@@ -39,6 +39,7 @@ export class PracticeOpeningMode {
 
         this.pgn = PGN; // This may be a mistake... 
         const moves = this.parse(PGN);
+        console.log(this.TAG + `parsed PGN: `, moves)
         // console.log(this.TAG + `moves: `, moves);
         this.moves = moves;
         this.setupComplete = true;
