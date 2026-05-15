@@ -41,13 +41,6 @@ function checkForCastle(san) {
     return false;
 }
 
-function handleCastle(manager, fromSquare) {
-    const piece = fromSquare.piece;
-    const color = piece.color;
-
-    KingLogicHandler.getInstance();
-
-}
 
 
 /**
@@ -170,7 +163,7 @@ export function onMove(fromSquare, toSquare, _manager) {
         manager.computerMove();
     }
 
-    manager.nav.loadPgn(manager.PGNTracker.pgn());
+    manager.nav.loadPgn(manager.PGNTracker.pgn()); // this is only needed for player moves? 
     // console.error(TAG + `updating move number... `)
     // manager.currentMoveNumber += 1;
     this.onEndTurn();
@@ -179,7 +172,7 @@ export function onMove(fromSquare, toSquare, _manager) {
  * Apply board step for navigator "back" from a nav result (piece leaves to-square toward from-square).
  */
 export function applyNavigatorUndo(manager, result) {
-    console.log(TAG + `Undo move: `);
+    console.log(TAG + `Undo move: `, result.san);
 
 
     const gameState = manager.GameState;
@@ -191,21 +184,40 @@ export function applyNavigatorUndo(manager, result) {
     const fromSquare = gameState.get(fromCoord);
 
 
-
-    if (result.san === "O-O-O" || result.san === "O-O") {
-
-        const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(toSquare, fromSquare);
+    const klh = KingLogicHandler.getInstance()
+    manager.currentMoveNumber -= 1;
+    if (result.san === "O-O-O") {
+        console.log(TAG + `castling LONG. handle!`);
+        const kingCastleSqr = klh.getCorrectKingSquare(toSquare, fromSquare);
 
         console.log(manager.TAG + `King Castle Square : ${kingCastleSqr.position}`);
-        toSquare = kingCastleSqr;
-        if (result.capturedPiece) {
-            // if there is a capture we need to put the piece back!
+
+        switch (fromSquare.piece.color) {
+            case "white":
+                klh.castleLongWhite();
+                break;
+            case "black":
+                klh.castleLongBlack();
+                break;
         }
+        return;
+
+    } else if (result.san === "O-O") {
+        console.log(TAG + `castling short. handle!`);
+        switch (fromSquare.piece.color) {
+            case "white":
+                klh.castleShortWhite();
+                break;
+            case "black":
+                klh.castleShortBlack();
+                break;
+        }
+        return;
     }
 
 
 
-    manager.currentMoveNumber -= 1;
+
 
     transferPiece(toSquare, fromSquare);
 
@@ -242,9 +254,39 @@ export function applyNavigatorRedo(manager, result) {
         // this is a capture, we need to handle it and extract the piece
         // onCaptureRemove(toSquare, fromSquare, result.moveIndex);
     }
+    manager.currentMoveNumber += 1;
+
+    const klh = KingLogicHandler.getInstance();
+    if (result.san === "O-O-O") {
+        console.log(TAG + `castling LONG. handle!`);
+        const kingCastleSqr = klh.getCorrectKingSquare(toSquare, fromSquare);
+
+        console.log(manager.TAG + `King Castle Square : ${kingCastleSqr.position}`);
+
+        switch (toSquare.piece.color) {
+            case "white":
+                klh.castleLongWhite(true);
+                break;
+            case "black":
+                klh.castleLongBlack(true);
+                break;
+        }
+        return;
+
+    } else if (result.san === "O-O") {
+        console.log(TAG + `castling short. handle!`, fromSquare);
+        switch (toSquare.piece.color) {
+            case "white":
+                klh.castleShortWhite(true);
+                break;
+            case "black":
+                klh.castleShortBlack(true);
+                break;
+        }
+        return;
+    }
 
     transferPiece(toSquare, fromSquare);
-    manager.currentMoveNumber += 1;
 
     console.error(TAG + `applyNavRedo, updating currentMoveNumber ${manager.currentMoveNumber}`);
 
@@ -312,5 +354,10 @@ export function onCaptureReset(fromSquare, toSquare, moveIndex) {
 
     toSquare.setPiece(piece);
 
+
+}
+
+
+export function handleCastling(fromSquare, toSquare) {
 
 }

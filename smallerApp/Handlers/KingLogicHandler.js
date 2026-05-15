@@ -366,7 +366,7 @@ export class KingLogicHandler {
         }
     }
 
-    castleLongBlack() {
+    castleLongBlack(force = false) {
         console.log(this.TAG + `castling long - black`);
         const manager = GameStateManager.getInstance()
 
@@ -381,10 +381,13 @@ export class KingLogicHandler {
         const e8 = manager.getSquare('e8');
         const c8 = manager.getSquare('c8');
 
-        const king = e8.piece;
+        if (force) {
+            const king = e8.piece;
 
-        // c8.setPiece(king);
-        // e8.removePiece();
+            c8.setPiece(king);
+            e8.removePiece();
+            return;
+        }
 
         console.log(this.TAG + `trying to castle long as black via onMove...`);
         // update tracking: 
@@ -392,7 +395,7 @@ export class KingLogicHandler {
 
     }
 
-    castleShortBlack() {
+    castleShortBlack(force = false) {
         console.log(this.TAG + `castling short - black`);
         const manager = GameStateManager.getInstance()
         const h8 = manager.getSquare('h8');
@@ -412,11 +415,17 @@ export class KingLogicHandler {
 
         console.log(this.TAG + `trying to castle short as black via onMove...`);
         // update tracking: 
+        if (force) {
+            const king = e8.piece;
+            g8.setPiece(king);
+            e8.removePiece();
+            return;
+        }
         onMove(e8, g8);
         // manager.PGNTracker.push('e1','g1');
     }
 
-    castleLongWhite() {
+    castleLongWhite(force = false) {
         console.warn(this.TAG + `castling long - white`);
         const manager = GameStateManager.getInstance()
 
@@ -431,10 +440,13 @@ export class KingLogicHandler {
         const e1 = manager.getSquare('e1');
         const c1 = manager.getSquare('c1');
 
-        const king = e1.piece;
+        if (force) {
+            const king = e1.piece;
 
-        // c1.setPiece(king);
-        // e1.removePiece();
+            c1.setPiece(king);
+            e1.removePiece();
+            return;
+        }
 
         console.log(this.TAG + `trying to castle short as white via onMove...`);
         // update tracking: 
@@ -442,7 +454,7 @@ export class KingLogicHandler {
 
     }
 
-    castleShortWhite() {
+    castleShortWhite(force = false) {
         const manager = GameStateManager.getInstance();
         console.log(this.TAG + `castling short - white`);
         //Rd1, Kc1
@@ -456,24 +468,18 @@ export class KingLogicHandler {
         const e1 = manager.getSquare('e1');
         const g1 = manager.getSquare('g1');
 
-        const king = e1.piece;
+        if (force) {
+            const king = e1.piece;
 
-        // g1.setPiece(king);
-        // e1.removePiece();
+            g1.setPiece(king);
+            e1.removePiece();
+            return;
+        }
 
         console.log(this.TAG + `trying to castle short as white via onMove... king piece = ${e1.piece}`);
         // update tracking: 
         onMove(e1, g1);
         // manager.PGNTracker.push('e1','g1');
-
-    }
-
-
-    /**
-     * takes a position coordinate. and maps it to properChecks.
-     * @param {str} coord 
-     */
-    canCastleWhite(coord) {
 
     }
 
