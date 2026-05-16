@@ -154,10 +154,19 @@ openingSelect.addEventListener("change", () => {
     gameState.setupPGN(); // setups the pgn with the ChessNavigator. 
 
 });
+
+
 // LLM API 
 const LLMRequest = document.getElementById("request-analysis");
+const spinner_requestAnalysis = document.getElementById("spinner-container")
 
 LLMRequest.addEventListener('click', () => {
+    spinner_requestAnalysis.classList.add('visible');
     GameStateManager.getInstance().requestAnalysis();
-})
+});
+
+
+const progressBar = document.getElementById('progress-bar')
+
+
 

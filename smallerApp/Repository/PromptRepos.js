@@ -14,7 +14,35 @@ Improvement Areas: Discussion on common mistakes in this opening and how to avoi
 Training Exercises: Suggested exercises or drills to help you improve your understanding and execution of the opening.
 
 `
-
+const ex_fromLocalGame =
+    `[Event "Live Chess"]
+ [Site "Chess.com"] 
+ [Date "2026.05.15"]
+  [Round "-"]
+   [White "TheWalrus2020"]
+    [Black "McFdeuce"]
+     [Result "1-0"]
+      [CurrentPosition "5rk1/6p1/5p2/p7/3K2b1/8/7p/7R b - - 1 44"]
+       [Timezone "UTC"]
+        [ECO "C25"]
+         [ECOUrl "https://www.chess.com/openings/Vienna-Game-Max-Lange-Vienna-Gambit-3...exf4"]
+          [UTCDate "2026.05.15"] 
+          [UTCTime "02:48:06"]
+           [WhiteElo "721"] 
+           [BlackElo "702"]
+            [TimeControl "600"]
+             [Termination "TheWalrus2020 won on time"]
+              [StartTime "02:48:06"]
+               [EndDate "2026.05.15"]
+                [EndTime "03:08:09"]
+                 [Link "https://www.chess.com/analysis/game/live/168723023564/analysis"]
+                  [WhiteUrl "https://images.chesscomfiles.com/uploads/v1/user/145800191.bfd59323.50x50o.85bf9a1bf35e.jpeg"]
+                   [WhiteCountry "2"]
+                    [WhiteTitle ""]
+                    [BlackUrl "https://www.chess.com/bundles/web/images/noavatar_l.84a92436.gif"] 
+                    [BlackCountry "95"]
+                     [BlackTitle ""] 
+                      1. e4 e5 2. Nc3 Nc6 3. f4 exf4 4. d3 $6 Qh4+ 5. Kd2 $1 Qf2+ $2 6. Nge2 $9 Nd4 7. b4 $2 Nxe2 $9 8. Bxe2 $9 Qxg2 $6 9. Rf1 $6 Bd6 10. Nd5 Qxh2 $2 11. c4 $9 Qh6 $9 12. Kc3 $6 Be5+ $2 13`
 
 // const prompt = `You are a chess coach explaining a game review to a club-level player.
 

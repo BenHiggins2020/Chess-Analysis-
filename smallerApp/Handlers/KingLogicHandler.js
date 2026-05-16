@@ -293,6 +293,7 @@ export class KingLogicHandler {
      * @returns 
      */
     isCastleMove(fromSquare, toSquare) {
+        if (fromSquare.piece.type.toLowerCase() !== "k") return false;
         console.log(this.TAG + `checking isCastleMove: ${fromSquare.position} ${toSquare.position}`)
         const piece = fromSquare.piece
         // console.log(
@@ -302,9 +303,6 @@ export class KingLogicHandler {
         // )
 
 
-        // if piece is not a king dont castle!
-        console.log(this.TAG + `checking if piece is a king`, piece.type.toLowerCase());
-        if (piece.type.toLowerCase() !== "k") return false;
 
         // let pieceHasMoved = false;
         // switch (piece.color) {
@@ -344,7 +342,7 @@ export class KingLogicHandler {
 
         console.log(this.TAG + `checking if the move includes possible castling squares: ${isWithinCastleSquare}`);
         console.log(this.TAG + `checking if the king has moved: ${kingHasMoved}`);
-        console.log(this.TAG + `Determined isCastleMoved = `, result);
+        console.log(this.TAG + `Determined isCastleMove = `, result);
 
         return result;
     }
@@ -833,16 +831,22 @@ export class KingLogicHandler {
      */
     #checkEmptySquare(listOfCoords) {
         const manager = GameStateManager.getInstance();
-
+        let result = true;
         listOfCoords.forEach((coord) => {
             const sqr = manager.getSquare(coord);
-            if (sqr.piece) {
+            const piece = sqr.piece
+            if (piece !== undefined) {
                 console.error(this.TAG + `checking for empty square: ${coord}`, sqr.piece);
-                return false;
+                result = false;
+                return result;
             }
         });
 
-        return true;
+        return result;
+    }
+
+    checkEmptySquare(listOfCoords) {
+        return this.#checkEmptySquare(listOfCoords);
     }
 
     #canCastleLongBlack() {
@@ -866,7 +870,11 @@ export class KingLogicHandler {
         const a8 = manager.getSquare('a8');
         const rook = a8.piece;
 
-        console.log(this.TAG + `check has rook moved`)
+        console.log(this.TAG + `check has rook moved`, rook)
+        if (rook === undefined || rook === null) {
+            console.log(this.TAG + `cant castle because rook has already moved! (not on h1)`)
+            return false;
+        }
         if (rook.hasMoved) {
             console.warn(this.TAG + `cant castle because rook has already moved!`)
             return false;
@@ -903,22 +911,27 @@ export class KingLogicHandler {
         const rook = h8.piece;
 
         console.log(this.TAG + `check has rook moved`)
+        if (rook === undefined || rook === null) {
+            console.log(this.TAG + `cant castle because rook has already moved! (not on h8)`)
+            return false;
+        }
         if (rook.hasMoved) {
             console.log(this.TAG + `cant castle because rook has already moved!`)
             return false;
         }
 
-        //TODO: Check are empty Squares attacked 
+        console.log(this.TAG + `finished castling check `)
         return true;
 
     }
 
     #canCastleShortWhite() {
+        console.warn(this.TAG + `checking: Can Castle short [white]`)
         const manager = GameStateManager.getInstance();
         let emptySquares = ['f1', 'g1'];
         const sqrsEmpty = this.#checkEmptySquare(emptySquares);
 
-        console.log(this.TAG + `check empty squares`)
+        console.log(this.TAG + `check empty squares`, sqrsEmpty)
 
         if (!sqrsEmpty) {
             console.warn(this.TAG + `cant castle because path is not clear`);
@@ -934,7 +947,11 @@ export class KingLogicHandler {
         const h1 = manager.getSquare('h1');
         const rook = h1.piece;
 
-        console.log(this.TAG + `check has rook moved`)
+        console.log(this.TAG + `check has rook moved`, rook)
+        if (rook === undefined || rook === null) {
+            console.log(this.TAG + `cant castle because rook has already moved! (not on h1)`)
+            return false;
+        }
         if (rook.hasMoved) {
             console.log(this.TAG + `cant castle because rook has already moved!`)
             return false;
@@ -945,11 +962,13 @@ export class KingLogicHandler {
     }
 
     #canCastleLongWhite() {
+        console.warn(this.TAG + `checking: Can Castle long [white]`)
+
         const manager = GameStateManager.getInstance();
         let emptySquares = ['c1', 'd1', 'b1'];
         const sqrsEmpty = this.#checkEmptySquare(emptySquares);
 
-        console.log(this.TAG + `check empty squares`)
+        console.log(this.TAG + `check empty squares `)
 
         if (!sqrsEmpty) {
             console.warn(this.TAG + `cant castle because path is not clear`);
@@ -965,7 +984,11 @@ export class KingLogicHandler {
         const a1 = manager.getSquare('a1');
         const rook = a1.piece;
 
-        console.log(this.TAG + `check has rook moved`)
+        console.log(this.TAG + `check has rook moved`, rook)
+        if (rook === undefined || rook === null) {
+            console.log(this.TAG + `cant castle because rook has already moved! (not on h1)`)
+            return false;
+        }
         if (rook.hasMoved) {
             console.log(this.TAG + `cant castle because rook has already moved!`)
             return false;

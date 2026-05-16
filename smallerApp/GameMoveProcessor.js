@@ -59,7 +59,7 @@ export function executePlayerMove(manager, _fromCoord, _toCoord) {
     const gameState = manager.GameState;
     const fromSquare = gameState.get(fromCoord);
     let toSquare = gameState.get(toCoord);
-    console.log(manager.TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
+    console.log(TAG + `Moving piece from ${fromCoord} to ${toCoord}`);
 
     if (!fromSquare || !toSquare) {
         console.error(manager.TAG + `Invalid move from ${fromSquare} to ${toSquare}`);
@@ -69,13 +69,18 @@ export function executePlayerMove(manager, _fromCoord, _toCoord) {
     const piece = fromSquare.piece;
     const pieceCanMove = piece.canMoveTo(fromSquare, toSquare, manager);
     const isCorrectTurn = piece.color === manager.currentTurn;
+    let isCastleMove = false;
+    let canCastle = false;
+    if (piece.type.toLowerCase() === "k") {
+        isCastleMove = KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k";
+        canCastle = KingLogicHandler.getInstance().canCastle(piece.color);
+    }
 
-    const isCastleMove = KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k";
-    const canCastle = KingLogicHandler.getInstance().canCastle(piece.color);
 
     console.warn(TAG + `legal move criteria: \n pieceCanMove (${pieceCanMove})\n its your turn ${isCorrectTurn},\n this is a castle move: ${isCastleMove} ,\n is castling even legal rn: ${canCastle} : `);
 
-    if ((pieceCanMove || (isCastleMove && canCastle)) && isCorrectTurn) {
+
+    if ((pieceCanMove || (isCastleMove && canCastle && piece.type.toLowerCase() === "k")) && isCorrectTurn) {
         if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k") {
             const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(fromSquare, toSquare);
             console.log(manager.TAG + `King Castle Square : ${kingCastleSqr.position}`);

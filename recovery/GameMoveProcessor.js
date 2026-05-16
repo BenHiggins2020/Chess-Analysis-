@@ -72,16 +72,28 @@ export function executePlayerMove(manager, _fromCoord, _toCoord) {
         return;
     }
 
+    // Normal move logic check.
     const piece = fromSquare.piece;
     const pieceCanMove = piece.canMoveTo(fromSquare, toSquare, manager);
     const isCorrectTurn = piece.color === manager.currentTurn;
 
-    const isCastleMove = KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k";
-    const canCastle = KingLogicHandler.getInstance().canCastle(piece.color);
+    // King specific move logic
+    let isCastleMove = false;
+    let canCastle = false;
 
-    console.warn(TAG + `legal move criteria: \n pieceCanMove (${pieceCanMove})\n its your turn ${isCorrectTurn},\n this is a castle move: ${isCastleMove} ,\n is castling even legal rn: ${canCastle} : `);
+    if (piece.type.toLowerCase() === "k") {
+        console.warn(this.TAG + `Piece is a king, doing bonus logic... `)
+        isCastleMove = KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k";
+        //canCastle = KingLogicHandler.getInstance().canCastle(piece.color);
+    }
 
-    if ((pieceCanMove || (isCastleMove && canCastle)) && isCorrectTurn) {
+    console.warn(TAG + `legal move criteria:
+         \n pieceCanMove (${pieceCanMove})
+         \n its your turn ${isCorrectTurn},
+         \n this is a castle move: ${isCastleMove} ,
+         \n is castling even legal rn: ${canCastle} : `);
+
+    if ((pieceCanMove || (isCastleMove)) && isCorrectTurn) {
         if (KingLogicHandler.getInstance().isCastleMove(fromSquare, toSquare) && piece.type.toLowerCase() === "k") {
             const kingCastleSqr = KingLogicHandler.getInstance().getCorrectKingSquare(fromSquare, toSquare);
             console.log(manager.TAG + `King Castle Square : ${kingCastleSqr.position}`);
@@ -89,16 +101,20 @@ export function executePlayerMove(manager, _fromCoord, _toCoord) {
             toCoord = toSquare.position;
         }
     } else {
-        console.error(manager.TAG + `Invalid move from ${fromSquare.position} to ${toSquare.position}
+        console.log(TAG + "cant move")
+
+        console.error(TAG + `Invalid move from ${fromSquare.position} to ${toSquare.position}
             \n because: Piece can move to square: ${pieceCanMove} or its not your turn: ${isCorrectTurn} (its ${manager.currentTurn}'s turn)`);
         return;
     }
+    console.log(TAG + "squares rendering")
 
     fromSquare.render();
     toSquare.render();
 
     //
     manager.PGNTracker.push(fromCoord, toCoord);
+    console.log(TAG + "pushing squares")
 
     manager.moveObj = {
         fromSquare,
@@ -115,19 +131,24 @@ export function executePlayerMove(manager, _fromCoord, _toCoord) {
     gameState.get(toSquare.position).setPiece(piece);
 
     manager.deselect();
-
+    console.log(TAG + "deselecting")
     manager.currentTurn = manager.currentTurn === "white" ? "black" : "white";
 
     manager.updateStatus(manager.currentTurn);
     manager.updatePGN(manager.PGNTracker.pgn().trim());
 
+
+    manager.nav.loadPgn(manager.PGNTracker.pgn());
+
+    console.warn(TAG + `END OF TURN FOR ${manager.currentTurn}updating move number... `)
+    console.log(TAG + "end of turn")
+    console.error(TAG + `END OF TURN FOR ${manager.currentTurn}updating move number... `)
+
+    manager.currentMoveNumber += 1;
+
     if (manager.playComputer && manager.currentTurn !== manager.player) {
         manager.computerMove();
     }
-
-    manager.nav.loadPgn(manager.PGNTracker.pgn());
-    console.error(TAG + `updating move number... `)
-    manager.currentMoveNumber += 1;
 }
 
 

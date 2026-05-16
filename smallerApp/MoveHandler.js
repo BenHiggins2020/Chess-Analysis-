@@ -641,10 +641,12 @@ export const handleRookMoves = (fromSquare, toSquare) => {
 
             if (toSquare.piece.color !== piece.color) {
                 // console.log(TAG + `selected square, has piece of different color, can move (capture)`)
-                piece.isFirstMove = false;
+
+                piece.hasMoved = true;
+                console.log(TAG + `setting rook hasMoved: ${piece.hasMoved}`)
+
                 return true;
             } else {
-                console.log(TAG + ``)
                 return false;
             }
         }
@@ -653,7 +655,9 @@ export const handleRookMoves = (fromSquare, toSquare) => {
 
         //     return true;
         // }
-        piece.isFirstMove = false;
+        piece.hasMoved = true;
+        console.log(TAG + `setting rook hasMoved: ${piece.hasMoved}`)
+
         return true;
     }
     // else if (KingLogicHandler.getInstance().isRookCastleMove(fromSquare, toSquare)) {
@@ -1048,7 +1052,6 @@ export const calculateKingMoves = (fromSquare) => {
     }
 
     //Can Castle
-    const kingLogic = KingLogicHandler.getInstance();
 
     // if (kingLogic.canCastleShort(piece.color)) {
 
@@ -1067,13 +1070,23 @@ export const calculateKingMoves = (fromSquare) => {
     //     console.error(TAG + `Can NOT Castle LONG !`, kingLogic.castlingSquares[piece.color].castleLong)
     // }
 
+    const kingHandler = KingLogicHandler.getInstance();
+    const _squares = [];
     const squares = [];
 
     moveCoords.forEach((pos) => {
         // console.log(TAG + `King move coords: ${pos}`)
-        const sqr = gameState.get(pos);
-        squares.push(sqr)
+        const isSqrEmpty = kingHandler.checkEmptySquare([pos])
+        console.log(TAG + `checking sqr: @ ${pos} isEmpty: ${isSqrEmpty}`)
+        if (isSqrEmpty) {
+
+            const sqr = gameState.get(pos);
+            squares.push(sqr)
+        }
+
     });
+
+
 
     // piece.moves = squares;
 

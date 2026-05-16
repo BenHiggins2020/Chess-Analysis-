@@ -117,6 +117,7 @@ async function call(prompt) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             model: models.qwen2_5_instruct,
+            temperature: 0.6,
             input: prompt,
             stream: false,
         })
@@ -126,7 +127,7 @@ async function call(prompt) {
     // console.log('status:', res.status);
     const data = await res.json();
     // const text = JSON.stringify(data, null, 2)
-    // console.log('response:', text);
+    console.log('json:', data);
     return data;
 }
 

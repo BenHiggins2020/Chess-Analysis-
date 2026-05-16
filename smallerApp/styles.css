@@ -1,240 +1,350 @@
-    .board {
+.board {
+  flex-wrap: wrap;
+  width: 512px;
+  /* 64px * 8 squares */
+  height: 512px;
+  background: #b35656;
+  display: grid;
+  gap: 0px;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
 
-        flex-wrap: wrap;
-        width: 512px;
-        /* 64px * 8 squares */
-        height: 512px;
-        background: #B35656;
-        display: grid;
-        gap: 0px;
-        grid-template-columns: repeat(8, 1fr);
-        grid-template-rows: repeat(8, 1fr);
-    }
+.board div {
+  width: 100%;
+  height: 100%;
+}
 
-    .board div {
-        width: 100%;
-        height: 100%;
-    }
+.board div:nth-child(odd) {
+  /* background: #BED4CB;  */
+}
 
-    .board div:nth-child(odd) {
-        /* background: #BED4CB;  */
-    }
+.panel-title {
+  border-radius: 8px;
+  padding: 10px;
+  flex: 1;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  background-color: #bed4cb;
+  align-items: center;
+}
 
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding: 20px;
+  /* background-color: #87B6BC ; */
+  height: 100%;
+}
 
-    .panel-title {
-        border-radius: 8px;
-        padding: 10px;
-        flex:1;
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        background-color: #BED4CB;
-        align-items: center;
+.btn-container {
+  display: flex;
+  padding-top: 10px;
+  flex-direction: column;
+  gap: 10px;
+}
 
-    }
+.column {
+  justify-items: center;
+  padding: 10px;
+}
 
-    .container {
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
-        padding: 20px;
-        /* background-color: #87B6BC ; */
-        height: 100%;
-    }
+.column-left {
+  flex: 1;
+  background-color: #f6f09f;
+}
 
-    .btn-container {
-        display: flex;
-        padding-top: 10px;
-        flex-direction: column;
-        gap: 10px;
-    }
+.column-right {
+  flex: 1;
+}
 
-    .column {
-        justify-items: center;
-        padding: 10px
-    }
+.square {
+  border-color: rgb(51, 77, 105);
+  border-width: 2px;
+  border-style: solid;
+  justify-content: center;
+  align-items: center;
+  justify-items: center;
+  width: 60px;
+  height: 60px;
+  box-sizing: border-box;
 
-    .column-left {
-        flex: 1;
-        background-color: #F6F09F;
-    }
+  display: flex;
+  flex: "space-between";
+  justify-content: center;
+  align-items: center;
 
-    .column-right {
-        flex: 1;
-        
-    }
+  /* Fixed Dimensions */
+  width: 64px;
+  height: 64px;
 
+  /* The "Anti-Stretch" Secret: */
+  flex-shrink: 0;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
 
+.light-square {
+  background-color: #bed4cb;
+}
 
-    .square {
-        border-color: rgb(51, 77, 105);
-        border-width: 2px;
-        border-style: solid;
-        justify-content: center;
-        align-items: center;
-        justify-items: center;
-        width: 60px;
-        height: 60px;
-        box-sizing: border-box;
-
-        display: flex;
-        flex: 'space-between';
-        justify-content: center;
-        align-items: center;
-
-        /* Fixed Dimensions */
-        width: 64px;
-        height: 64px;
-
-        /* The "Anti-Stretch" Secret: */
-        flex-shrink: 0;
-        flex-grow: 0;
-        box-sizing: border-box;
-    }
-
-    .light-square {
-        background-color: #BED4CB;
-    }
-
-    /* .dragging-now {
+/* .dragging-now {
         position: fixed !important;
         pointer-events: none !important;
         z-index: 10000;
         margin: 0;
     } */
 
-    .dark-square {
-        background-color: #F6F09F;
-    }
+.dark-square {
+  background-color: #f6f09f;
+}
 
-    .piece {
-        cursor: grab;
-        user-select: none;
-        -webkit-user-select: none;
+.piece {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 
-        max-width: 75%;
-        max-height: 75%;
-        display: flex;
-        font-size: 45px;
-        justify-content: center;
-        align-items: center;
-    }
+  max-width: 75%;
+  max-height: 75%;
+  display: flex;
+  font-size: 45px;
+  justify-content: center;
+  align-items: center;
+}
 
-    .piece.is-active {
-        cursor: grabbing;
-    }
+.piece.is-active {
+  cursor: grabbing;
+}
 
+.piece:active {
+  cursor: wait;
+}
 
-    .piece:active {
-        cursor: wait;
-    }
+.piece-white {
+  color: white;
+}
 
-    .piece-white {
-        color: white
-    }
+.piece-black {
+  color: black;
+}
 
-    .piece-black {
-        color: black;
-    }
+.pgn-container {
+  padding-top: 40px;
+}
 
+.pgn-holder {
+  padding: 20px;
 
-    .pgn-container {
-        padding-top: 40px;
+  border-color: #b35656;
+  border-style: solid;
+  border-radius: 8px;
+}
 
-    }
+.pgn-load-button {
+  border-radius: 8px;
+  border-width: 2px;
+  border-color: #b35656;
+}
 
-    .pgn-holder {
-        padding: 20px;
+.menu-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px;
+  background-color: #bed4cb;
+  border-color: #b35656;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 8px;
+}
+.menu-bar-dropdown {
+  padding: 0; /* Keep container clean if it holds only one element */
+}
+.menu-select {
+  /* General Box Appearance */
+  padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
+  border: 2px solid #ccc; /* Light gray border around the entire element */
+  border-radius: 8px; /* Soft, rounded corners for a modern look */
+  background-color: #ffffff; /* White background */
+  cursor: pointer; /* Changes mouse icon when hovering (good UX) */
 
-        border-color: #B35656;
-        border-style: solid;
-        border-radius: 8px;
-    }
+  /* Sizing & Typography */
+  font-size: 16px; /* Standard readable size */
+  appearance: none; /* This is crucial! It resets default browser styling for the appearance/arrow. */
+  background-image: url("data:image/svg+xml,..."); /* Fallback placeholder if needed */
+}
 
-    .pgn-load-button {
-        border-radius: 8px;
-        border-width: 2px;
-        border-color: #B35656;
-    }
+.menu-select-label {
+  padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
 
-    .menu-bar {
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-start;
-        align-items: center;
-        padding: 10px;
-        background-color: #BED4CB;
-        border-color: #B35656;
-        border-width: 2px;
-        border-style: solid;
-        border-radius: 8px;
-        }
-        .menu-bar-dropdown {
-             padding: 0; /* Keep container clean if it holds only one element */
-        }
-    .menu-select {
-            /* General Box Appearance */
-        padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
-        border: 2px solid #ccc; /* Light gray border around the entire element */
-        border-radius: 8px; /* Soft, rounded corners for a modern look */
-        background-color: #ffffff; /* White background */
-        cursor: pointer; /* Changes mouse icon when hovering (good UX) */
+  cursor: pointer; /* Changes mouse icon when hovering (good UX) */
+}
 
-        /* Sizing & Typography */
-        font-size: 16px; /* Standard readable size */
-        appearance: none; /* This is crucial! It resets default browser styling for the appearance/arrow. */
-        background-image: url("data:image/svg+xml,..."); /* Fallback placeholder if needed */
-        }
-
-    .menu-select-label {
-        padding: 10px 15px; /* Padding inside the box (top/bottom, left/right) */
-    
-        cursor: pointer; /* Changes mouse icon when hovering (good UX) */
-    }
-
-    /**
+/**
      * AI Styles for the different control panels. 
      */
-    .hidden {
-        display: none !important;
-    }
+.hidden {
+  display: none !important;
+}
 
-     /* Styling for the dropdown container */
-        #dropdown-container {
-            /* We need a label here since we are hiding/showing the whole block */
-            display: flex;
-            align-items: center;
-        }
+/* Styling for the dropdown container */
+#dropdown-container {
+  /* We need a label here since we are hiding/showing the whole block */
+  display: flex;
+  align-items: center;
+}
 
-        /* General styling for select and button remains the same */
-        select, button {
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 16px;
-        }
+/* General styling for select and button remains the same */
+select,
+button {
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 16px;
+}
 
-        select {
-            border: 2px solid #ccc;
-            cursor: pointer;
-            background-color: white;
-        }
+select {
+  border: 2px solid #ccc;
+  cursor: pointer;
+  background-color: white;
+}
 
-        button {
-            /* Default styles */
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        
-        #start-button {
-             background-color: #007bff; 
-             color: white;
-        }
+button {
+  /* Default styles */
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
-        /* --- Toggle button specific style (for testing the condition) --- */
-         #toggle-button {
-            margin-top: 20px;
-            padding: 8px 15px;
-            background-color: #6c757d; /* Gray color for a secondary action */
-            color: white;
-        }
+#start-button {
+  background-color: #007bff;
+  color: white;
+}
+
+/* --- Toggle button specific style (for testing the condition) --- */
+#toggle-button {
+  margin-top: 20px;
+  padding: 8px 15px;
+  background-color: #6c757d; /* Gray color for a secondary action */
+  color: white;
+}
+
+#spinner-container {
+  display: none; /* Hidden by default */
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db; /* Color of the spinner */
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+  opacity: 0;
+  transition: opacity 0.5s ease; /* Smooth fade out */
+
+  justify-content: center;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+#spinner-container.visible {
+  display: block;
+  opacity: 1;
+}
+
+#status-text {
+  color: #333;
+}
+
+/* CP Bar */
+progress {
+  width: 50%;
+  background-color: white;
+  border: none;
+}
+.progress-bar {
+  width: 20px; /* Width of the bar */
+  height: 30px; /* Height of the bar */
+  background-color: black; /* Green color for the filled part */
+  text-align: center;
+  line-height: 30px; /* Center vertically */
+  border-radius: 12px;
+}
+.cp-display-container {
+  background-color: var(--bar-bg);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  max-width: 95%;
+}
+
+.cp-bar-wrapper {
+  position: relative;
+  height: 10px;
+  background-color: #3d3d3d;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 10px;
+  padding: 2px;
+}
+
+.cp-bar-container {
+  width: 300px;
+  height: 20px;
+  background-color: #2d2d2d;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.cp-fill {
+  height: 100%;
+  width: 0%;
+  position: absolute;
+  /* left: 50%; Start from the middle */
+  border-radius: 8px;
+
+  transition:
+    width 0.6s ease-out,
+    background-color 0.3s ease,
+    left 0.4s ease-out;
+}
+/* Positive CP (Good) - Green, fills to the right */
+.cp-fill.positive {
+  background-color: #4caf50;
+  left: 50%;
+}
+
+/* Negative CP (Bad) - Red, fills from the middle left */
+.cp-fill.negative {
+  background-color: #f44336;
+  right: auto; /* Reset for negative animation */
+  animation: slideLeft 0.6s ease-out forwards;
+}
+
+@keyframes slideFromRight {
+  from {
+    left: 100%;
+    width: 0;
+  }
+  to {
+    width: 50%;
+  } /* Example - adjust % based on calc */
+}
+
+.positive-sign {
+  color: var(--progress-good);
+}
+.negative-sign {
+  color: var(--progress-bad);
+}

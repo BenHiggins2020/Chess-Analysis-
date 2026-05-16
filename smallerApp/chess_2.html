@@ -29,7 +29,17 @@
         <div class="colum-left">
             <div class="panel-title">Game</div>
 
+            <!-- The Progress Bar -->
+            <!-- <div class="cp-bar-container">
+                <div class="cp-fill negative" id="progress-bar">
+                    <div class="cp-value" id="cp"></div>
+                </div>
+            </div> -->
+
+            <progress id="progress-bar" value="50" max="100"></progress>
+            <div id="cp-value">0</div>
             <div id="board" class="board"></div>
+
             <div>
                 <p id="status">
                     White to move.
@@ -119,15 +129,17 @@
         <div class="column-right">
             <div class="panel-title">
                 <h3>PGN</h3>
-
+                <div class="analysis" id="pgn-text"></div>
             </div>
 
-            <div class="analysis" id="pgn-text"></div>
+
 
             <div class="panel-title">
                 <h3>Analysis</h3>
                 <div id="analysis_txt">
-
+                    <div id="spinner-container" class="">
+                        <!-- Optional: You can add a custom icon or text here inside the div -->
+                    </div>
                 </div>
 
             </div>

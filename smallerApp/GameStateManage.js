@@ -16,6 +16,7 @@ import { parsePGN, expandVariations } from "./Util/ChessNavigator2.js";
 import { buildCoachPrompt } from "./Util/PromptUtil.js";
 import { executePlayerMove, applyNavigatorUndo, applyNavigatorRedo } from "./GameMoveProcessor.js";
 import { PracticeOpeningMode } from "./Modes/PracticeOpeningMode.js"
+import { updateEval } from "./Manager/EvalBar.js";
 
 export class GameStateManager {
     static #instance = null;
@@ -588,10 +589,13 @@ export class GameStateManager {
     async analyse(fen) {
         const result = await this.stockfish.analyse(fen, this.stockfishLines);
         console.log(this.TAG + `Stockfish evaluation:`, result);
+        updateEval(this.eval_before, result.cp);
+        this.eval_before = result.cp;
         return result;
     }
 
     handleMove = (fromCoord, toCoord) => {
+        console.log(this.TAG + `handle move. `);
         executePlayerMove(this, fromCoord, toCoord);
     }
 
@@ -692,9 +696,6 @@ export class GameStateManager {
         applyNavigatorUndo(this, result);
     }
 
-
-
-
     async requestAnalysis() {
         console.warn(this.TAG + `restAnalysis `);
         const tracker = this.PGNTracker;
@@ -719,6 +720,9 @@ export class GameStateManager {
             }
         }
         );
+
+        const spinner = document.getElementById("spinner-container");
+        spinner.classList.remove("visible")
         console.log(this.TAG + `analysis finished: `, response);
         const text = response.output[0].content;
         console.log(this.TAG + `content: `, text)
@@ -780,11 +784,11 @@ export class GameStateManager {
             case "practice":
                 console.log(this.TAG + `Setting mode to practice`)
                 this.mode = new PracticeOpeningMode();
-                thius.computerMove = false;
+                this.computerMove = false;
 
                 break;
             case "computer":
-                thius.computerMove = true;
+                this.computerMove = true;
                 // this.mode = new ComputerMode();
                 break;
             case "self":
